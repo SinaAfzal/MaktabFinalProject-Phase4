@@ -1,0 +1,75 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Payment Form</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://www.google.com/recaptcha/api.js"></script>
+  <script src="script.js"></script>
+</head>
+<body>
+<form id="payment-form" action="/payment" method="post">
+  <h1 class="title">Payment Form</h1>
+
+  <div class="form-group">
+    <label for="cardNo">Card Number:</label>
+    <input type="text" id="cardNo" name="cardNo" maxlength="16" pattern="\d{16}" required>
+  </div>
+
+  <div class="form-group">
+    <label for="cvv">CVV:</label>
+    <input type="text" id="cvv" name="cvv" maxlength="4" pattern="\d{3}" required>
+  </div>
+
+  <div class="form-group">
+    <label for="year">Expiry Year:</label>
+    <input type="number" id="year" name="year" min="2024" max="2035" required>
+  </div>
+
+  <div class="form-group">
+    <label for="month">Expiry Month:</label>
+    <select id="month" name="month" required>
+      <option value="" > select </option>
+      <option value="01">January</option>
+      <option value="02">February</option>
+      <option value="03">March</option>
+      <option value="04">َApril</option>
+      <option value="05">May</option>
+      <option value="06">June</option>
+      <option value="07">July</option>
+      <option value="08">August</option>
+      <option value="09">September</option>
+      <option value="10">October</option>
+      <option value="11">November</option>
+      <option value="12">December</option>
+    </select>
+  </div>
+
+  <div class="form-group">
+    <label for="password">Password:</label>
+    <input type="password" id="password" name="password" minlength="6" maxlength="10" required>
+  </div>
+
+  <div id="recaptcha-placeholder" class="g-recaptcha"
+       data-sitekey="6Le1ZGUpAAAAAOntvyxRpAlDsGiAT_Jv3YFHLAAK">
+  </div>
+
+  <button type="submit">Pay Now</button>
+</form>
+
+<script>
+  // Replace this with your reCAPTCHA implementation logic
+  function handleRecaptcha() {
+    // Submit the form only if reCAPTCHA verification is successful
+    // You need to implement your own reCAPTCHA integration here
+    if (/* verify reCAPTCHA token */) {
+      document.getElementById("payment-form").submit();
+    } else {
+      alert("Please complete reCAPTCHA verification");
+    }
+  }
+</script>
+</body>
+</html>
