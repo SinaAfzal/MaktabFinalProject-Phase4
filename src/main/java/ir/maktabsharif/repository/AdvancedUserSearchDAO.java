@@ -13,12 +13,13 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.TypedQuery;
 import jakarta.persistence.criteria.*;
 
+import jakarta.validation.constraints.Min;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
-
+//todo make service for this and use the service in the controller
 @Repository
 public class AdvancedUserSearchDAO { //todo use Specification to develop this API in springboot data-jpa
     private final EntityManager entityManager;
@@ -51,11 +52,19 @@ public class AdvancedUserSearchDAO { //todo use Specification to develop this AP
         addTradesManCreditMinPredicate(predicates, root, criteriaBuilder, advancedUserSearchDTO.getTradesManEarnedCreditMin(), advancedUserSearchDTO.getRole());
         addTradesManCreditMaxPredicate(predicates, root, criteriaBuilder, advancedUserSearchDTO.getTradesManEarnedCreditMax(), advancedUserSearchDTO.getRole());
         addTradesManCategoryPredicate(predicates, root, criteriaBuilder, query, advancedUserSearchDTO.getTradesManSubCategoryId(), advancedUserSearchDTO.getRole());
-
+        addTradesManMinNumberOfProposalsPredicate(predicates, root, criteriaBuilder, advancedUserSearchDTO.getMinNumberOfProposalsSent(), advancedUserSearchDTO.getRole());
+        addTradesManMaxNumberOfProposalsPredicate(predicates, root, criteriaBuilder, advancedUserSearchDTO.getMaxNumberOfProposalsSent(), advancedUserSearchDTO.getRole());
 
         //add customer-specific predicates
         addCustomerBalanceMinPredicate(predicates, root, criteriaBuilder, advancedUserSearchDTO.getCustomerPurchasedBalanceMin(), advancedUserSearchDTO.getRole());
         addCustomerBalanceMaxPredicate(predicates, root, criteriaBuilder, advancedUserSearchDTO.getCustomerPurchasedBalanceMax(), advancedUserSearchDTO.getRole());
+        addCustomerMinNumberOfRequestedTasksPredicate(predicates, root, criteriaBuilder, advancedUserSearchDTO.getMinNumberOfRequestedTasks(), advancedUserSearchDTO.getRole());
+        addCustomerMaxNumberOfRequestedTasksPredicate(predicates, root, criteriaBuilder, advancedUserSearchDTO.getMaxNumberOfRequestedTasks(), advancedUserSearchDTO.getRole());
+
+        //add customer&tradesman-specific predicates
+        addMinNumberOfDoneTasksPredicate(predicates, root, criteriaBuilder, advancedUserSearchDTO.getMinNumberOfDoneTasks(), advancedUserSearchDTO.getRole());
+        addMaxNumberOfDoneTasksPredicate(predicates, root, criteriaBuilder, advancedUserSearchDTO.getMaxNumberOfDoneTasks(), advancedUserSearchDTO.getRole());
+
 
         if (predicates.size() > 0) {
             query.where(predicates.toArray(new Predicate[0]));
@@ -140,7 +149,7 @@ public class AdvancedUserSearchDAO { //todo use Specification to develop this AP
         if (
                 tradesManStatus != null
                         &&
-                        (role == null || role.equals(UserRole.TRADESMAN))
+                        (role == null || role.equals(UserRole.ROLE_TRADESMAN))
         ) {
             Predicate tradesmanStatusPredicate = criteriaBuilder.equal(
                     root.get("status"), tradesManStatus
@@ -153,7 +162,7 @@ public class AdvancedUserSearchDAO { //todo use Specification to develop this AP
         if (
                 minRating != null
                         &&
-                        (role == null || role.equals(UserRole.TRADESMAN))
+                        (role == null || role.equals(UserRole.ROLE_TRADESMAN))
         ) {
             Predicate tradesmanRatingMinPredicate = criteriaBuilder.greaterThanOrEqualTo(
                     root.get("rating"), minRating
@@ -166,7 +175,7 @@ public class AdvancedUserSearchDAO { //todo use Specification to develop this AP
         if (
                 maxRating != null
                         &&
-                        (role == null || role.equals(UserRole.TRADESMAN))
+                        (role == null || role.equals(UserRole.ROLE_TRADESMAN))
         ) {
             Predicate tradesmanRatingMaxPredicate = criteriaBuilder.lessThanOrEqualTo(
                     root.get("rating"), maxRating
@@ -179,7 +188,7 @@ public class AdvancedUserSearchDAO { //todo use Specification to develop this AP
         if (
                 minCredit != null
                         &&
-                        (role == null || role.equals(UserRole.TRADESMAN))
+                        (role == null || role.equals(UserRole.ROLE_TRADESMAN))
         ) {
             Predicate tradesmanMinCreditPredicate = criteriaBuilder.greaterThanOrEqualTo(
                     root.get("earnedCredit"), minCredit
@@ -192,7 +201,7 @@ public class AdvancedUserSearchDAO { //todo use Specification to develop this AP
         if (
                 maxCredit != null
                         &&
-                        (role == null || role.equals(UserRole.TRADESMAN))
+                        (role == null || role.equals(UserRole.ROLE_TRADESMAN))
         ) {
             Predicate tradesmanMaxCreditPredicate = criteriaBuilder.lessThanOrEqualTo(
                     root.get("earnedCredit"), maxCredit
@@ -217,7 +226,7 @@ public class AdvancedUserSearchDAO { //todo use Specification to develop this AP
         if (
                 catId != null
                         &&
-                        (role == null || role.equals(UserRole.TRADESMAN))
+                        (role == null || role.equals(UserRole.ROLE_TRADESMAN))
         ) {
 
             //creates a subquery of type Long (IDs of categories) from main query of type BaseUser and then gets a root of Categrory. this is because the relationship between tradesman and category is one way and is handled from category side by putting a list<TradesMan> filed in Category entity.
@@ -238,11 +247,37 @@ public class AdvancedUserSearchDAO { //todo use Specification to develop this AP
         }
     }
 
+    private void addTradesManMinNumberOfProposalsPredicate(List<Predicate> predicates, Root<BaseUser> root, CriteriaBuilder criteriaBuilder, Long minNumProposals, UserRole role) {
+        if (
+                minNumProposals != null
+                        &&
+                        (role == null || role.equals(UserRole.ROLE_TRADESMAN))
+        ) {
+            Predicate tradesmanMinNumProposalsPredicate = criteriaBuilder.greaterThanOrEqualTo(
+                    root.get("numberOfProposalsSent"), minNumProposals
+            );
+            predicates.add(tradesmanMinNumProposalsPredicate);
+        }
+    }
+
+    private void addTradesManMaxNumberOfProposalsPredicate(List<Predicate> predicates, Root<BaseUser> root, CriteriaBuilder criteriaBuilder, Long maxNumProposals, UserRole role) {
+        if (
+                maxNumProposals != null
+                        &&
+                        (role == null || role.equals(UserRole.ROLE_TRADESMAN))
+        ) {
+            Predicate tradesmanMaxNumProposalsPredicate = criteriaBuilder.lessThanOrEqualTo(
+                    root.get("numberOfProposalsSent"), maxNumProposals
+            );
+            predicates.add(tradesmanMaxNumProposalsPredicate);
+        }
+    }
+
     private void addCustomerBalanceMinPredicate(List<Predicate> predicates, Root<BaseUser> root, CriteriaBuilder criteriaBuilder, Double minBalance, UserRole role) {
         if (
                 minBalance != null
                         &&
-                        (role == null || role.equals(UserRole.CUSTOMER))
+                        (role == null || role.equals(UserRole.ROLE_CUSTOMER))
         ) {
             Predicate customerMinBalancePredicate = criteriaBuilder.greaterThanOrEqualTo(
                     root.get("purchasedBalance"), minBalance
@@ -255,7 +290,7 @@ public class AdvancedUserSearchDAO { //todo use Specification to develop this AP
         if (
                 maxBalance != null
                         &&
-                        (role == null || role.equals(UserRole.CUSTOMER))
+                        (role == null || role.equals(UserRole.ROLE_CUSTOMER))
         ) {
             Predicate customerMaxBalancePredicate = criteriaBuilder.lessThanOrEqualTo(
                     root.get("purchasedBalance"), maxBalance
@@ -263,4 +298,57 @@ public class AdvancedUserSearchDAO { //todo use Specification to develop this AP
             predicates.add(customerMaxBalancePredicate);
         }
     }
+
+    private void addCustomerMinNumberOfRequestedTasksPredicate(List<Predicate> predicates, Root<BaseUser> root, CriteriaBuilder criteriaBuilder, Long minNumRequestedTasks, UserRole role) {
+        if (
+                minNumRequestedTasks != null
+                        &&
+                        (role == null || role.equals(UserRole.ROLE_CUSTOMER))
+        ) {
+            Predicate customerMinNumberOfRequestedTasksPredicate = criteriaBuilder.greaterThanOrEqualTo(
+                    root.get("numberOfRequestedTasks"), minNumRequestedTasks
+            );
+            predicates.add(customerMinNumberOfRequestedTasksPredicate);
+        }
+    }
+
+    private void addCustomerMaxNumberOfRequestedTasksPredicate(List<Predicate> predicates, Root<BaseUser> root, CriteriaBuilder criteriaBuilder, Long maxNumRequestedTasks, UserRole role) {
+        if (
+                maxNumRequestedTasks != null
+                        &&
+                        (role == null || role.equals(UserRole.ROLE_CUSTOMER))
+        ) {
+            Predicate customerMaxNumberOfRequestedTasksPredicate = criteriaBuilder.lessThanOrEqualTo(
+                    root.get("numberOfRequestedTasks"), maxNumRequestedTasks
+            );
+            predicates.add(customerMaxNumberOfRequestedTasksPredicate);
+        }
+    }
+
+    private void addMinNumberOfDoneTasksPredicate(List<Predicate> predicates, Root<BaseUser> root, CriteriaBuilder criteriaBuilder, Long minNumberOfDoneTasks, UserRole role) {
+        if (
+                minNumberOfDoneTasks != null
+                        &&
+                        (role == null || !role.equals(UserRole.ROLE_ADMIN))
+        ) {
+            Predicate minNumberOfDoneTasksPredicate = criteriaBuilder.greaterThanOrEqualTo(
+                    root.get("numberOfDoneTasks"), minNumberOfDoneTasks
+            );
+            predicates.add(minNumberOfDoneTasksPredicate);
+        }
+    }
+
+    private void addMaxNumberOfDoneTasksPredicate(List<Predicate> predicates, Root<BaseUser> root, CriteriaBuilder criteriaBuilder, Long maxNumberOfDoneTasks, UserRole role) {
+        if (
+                maxNumberOfDoneTasks != null
+                        &&
+                        (role == null || !role.equals(UserRole.ROLE_ADMIN))
+        ) {
+            Predicate maxNumberOfDoneTasksPredicate = criteriaBuilder.lessThanOrEqualTo(
+                    root.get("numberOfDoneTasks"), maxNumberOfDoneTasks
+            );
+            predicates.add(maxNumberOfDoneTasksPredicate);
+        }
+    }
+
 }
