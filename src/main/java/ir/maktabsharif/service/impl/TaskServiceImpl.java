@@ -18,6 +18,7 @@ import ir.maktabsharif.util.exception.ExistingEntityCannotBeFetchedException;
 import ir.maktabsharif.util.exception.InvalidInputException;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -108,6 +109,7 @@ public class TaskServiceImpl implements TaskService {
         if (!violations.isEmpty())
             throw new ConstraintViolationException(violations);
         repository.save(task);
+        repository.updateCustomerNumberOfRequestedTasks(customerId, customer.getNumberOfRequestedTasks() + 1);
     }
 
     /**
@@ -267,12 +269,14 @@ public class TaskServiceImpl implements TaskService {
 
         task.setStatus(status);
         repository.save(task);
-
+        Long numberOfDoneTasksOfCustomer = task.getCustomer().getNumberOfDoneTasks();
         //apply fines for possible delay;
         TradesMan tradesMan = task.getTradesManWhoGotTheJob();
         if (status.equals(TaskStatus.DONE)) {
             Float delayFine = calculateDelayFine(taskId);
             Float currentScoreOfTradesMan = tradesMan.getRating();
+            tradesMan.setNumberOfDoneTasks(tradesMan.getNumberOfDoneTasks() + 1);
+            repository.updateCustomerNumberOfDoneTasks(customerId, numberOfDoneTasksOfCustomer + 1);
             if (delayFine > currentScoreOfTradesMan) {
                 tradesMan.setRating(0F);
                 tradesMan.setActive(false);
@@ -291,7 +295,7 @@ public class TaskServiceImpl implements TaskService {
     public void deleteTaskById(Long taskId, Long customerId) {
         Task task = repository.findById(taskId).orElseThrow(() -> new InvalidInputException("Invalid taskId"));
         if (!task.getCustomer().getId().equals(customerId))
-            throw new AccessDeniedException("Only task creator can edit the task!");
+            throw new AccessDeniedException("Only task creator can delete the task!");
         if (!task.getStatus().equals(TaskStatus.AWAITING_OFFER_BY_TRADESMEN))
             throw new AccessDeniedException("You cannot delete the task after receiving a proposal!");
         repository.deleteById(taskId);
@@ -333,6 +337,7 @@ public class TaskServiceImpl implements TaskService {
             throw new AccessDeniedException("Only creator of the task is allowed to select a proposal!");
         TradesMan tradesMan = repository.findTradesManByTradesManId(proposal.getTradesManId()).orElseThrow(() -> new ExistingEntityCannotBeFetchedException("The proposal does not have a properly set tradesman! please contact site admin!"));
         task.setTradesManWhoGotTheJob(tradesMan);
+        task.setSelectedProposal(proposal);
         task.setStatus(TaskStatus.AWAITING_TRADESMAN_ARRIVAL);
         Set<ConstraintViolation<Task>> violations = ApplicationContext.getValidator().validate(task);
         if (!violations.isEmpty())
@@ -379,14 +384,17 @@ public class TaskServiceImpl implements TaskService {
         foundTaskDTO.setDescription(task.getDescription());
         foundTaskDTO.setDateTimeOfBeingDone(task.getDateTimeOfBeingDone());
         foundTaskDTO.setTaskStatus(task.getStatus());
-        if (SecurityContext.getCurrentUser() instanceof TradesMan)
+        if (SecurityContextHolder.getContext().getAuthentication().getPrincipal() instanceof TradesMan)
             foundTaskDTO.setComment("TradesMen are not allowed to see this!");
         else
             foundTaskDTO.setComment(task.getComment());
         foundTaskDTO.setLocationAddress(task.getLocationAddress());
         foundTaskDTO.setScore(task.getScore());
-        if (task.getTradesManWhoGotTheJob() != null)
+        if (task.getTradesManWhoGotTheJob() != null) {
             foundTaskDTO.setTradesManWhoGotTheJobId(task.getTradesManWhoGotTheJob().getId());
+            foundTaskDTO.setSelectedProposalId(task.getSelectedProposal().getId());
+            foundTaskDTO.setWinnerPrice(task.getSelectedProposal().getProposedPrice());
+        }
         foundTaskDTO.setTaskDateTimeByCustomer(task.getTaskDateTimeByCustomer());
         foundTaskDTO.setSubCategoryId(task.getSubCategoryId());
         foundTaskDTO.setRequestDateTime(task.getRequestDateTime());
