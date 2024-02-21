@@ -1,20 +1,22 @@
 package ir.maktabsharif.service;
 
 
-
-import ir.maktabsharif.model.Admin;
 import ir.maktabsharif.model.BaseUser;
-import ir.maktabsharif.service.base.BaseUserService;
 import ir.maktabsharif.service.dto.request.AdminRegistrationDTO;
 import ir.maktabsharif.service.dto.request.AdvancedUserSearchDTO;
+import ir.maktabsharif.service.dto.response.FoundAdminDTO;
+import ir.maktabsharif.service.dto.response.ResponseDTO;
+import jakarta.mail.MessagingException;
 
-import java.security.NoSuchAlgorithmException;
-import java.security.spec.InvalidKeySpecException;
 import java.util.List;
 
-public interface AdminService extends BaseUserService<Admin> {
+public interface AdminService extends UserService {
 
-void register(AdminRegistrationDTO adminRegistrationDTO) throws NoSuchAlgorithmException, InvalidKeySpecException, InterruptedException;
+    boolean adminExistsByEmail(String email);
 
-List<BaseUser> advancedUserSearch(AdvancedUserSearchDTO advancedUserSearchDTO);
+    ResponseDTO findAdminByEmail(String email);
+
+    void register(AdminRegistrationDTO adminRegistrationDTO) throws MessagingException, InterruptedException;
+
+    List<BaseUser> advancedUserSearch(AdvancedUserSearchDTO advancedUserSearchDTO);
 }
