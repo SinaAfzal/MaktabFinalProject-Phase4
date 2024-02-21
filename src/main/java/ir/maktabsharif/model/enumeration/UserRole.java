@@ -1,7 +1,7 @@
 package ir.maktabsharif.model.enumeration;
 
 public enum UserRole {
-    CUSTOMER,
-    TRADESMAN,
-    ADMIN
+    ROLE_CUSTOMER,
+    ROLE_TRADESMAN,
+    ROLE_ADMIN
 }
