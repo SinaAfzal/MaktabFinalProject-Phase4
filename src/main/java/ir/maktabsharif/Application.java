@@ -1,44 +1,43 @@
 package ir.maktabsharif;
 
-import ir.maktabsharif.model.enumeration.TradesManStatus;
-import ir.maktabsharif.repository.AdvancedUserSearchDAO;
-import ir.maktabsharif.service.AdminService;
-import ir.maktabsharif.service.CategoryService;
 import ir.maktabsharif.service.CustomerService;
-import ir.maktabsharif.service.dto.request.AdvancedUserSearchDTO;
 import jakarta.annotation.PostConstruct;
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceUnit;
+import org.checkerframework.framework.qual.PostconditionAnnotation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
-
-import java.time.LocalDate;
+import org.springframework.scheduling.annotation.EnableAsync;
 
 
 @SpringBootApplication
+@EnableAsync
 public class Application {
     @Autowired
-    CategoryService categoryService;
-    @Autowired
-    AdminService adminService;
-    @Autowired
-    CustomerService customerService;
+    private final CustomerService customerService;
 
-    public Application(AdvancedUserSearchDAO advancedUserSearchDAO) {
-        this.advancedUserSearchDAO = advancedUserSearchDAO;
+    public Application(CustomerService customerService) {
+        this.customerService = customerService;
     }
-
 
     public static void main(String[] args) {
         SpringApplication.run(Application.class, args);
     }
 
-    private final AdvancedUserSearchDAO advancedUserSearchDAO;
-@Bean
-public EntityManager getEntityManagerBean(EntityManager entityManager){
+//    @EventListener(ApplicationReadyEvent.class)
+//    public void test() throws MessagingException {
+//        emailService.sendWithHTMLTemplate(new Email("sds", Policy.getVerificationEmailsAreSentFrom(),"fasfasd@asdasd.com","ededed"));
+//    }
+
+
+    @Bean
+    public EntityManager getEntityManagerBean(EntityManager entityManager) {
         return entityManager;
-}
+    }
+
+
 //    @PostConstruct
 //    public void test() throws NoSuchAlgorithmException, InvalidKeySpecException, InterruptedException {
 ////register admin
@@ -83,11 +82,30 @@ public EntityManager getEntityManagerBean(EntityManager entityManager){
 //        customerService.login(new LoginDTO("customerForTaskTest@gmail.com","Sina123456"));
 //
 //    }
-    @PostConstruct
-    public void test(){
-        AdvancedUserSearchDTO dto = AdvancedUserSearchDTO.builder().tradesManSubCategoryId(53L).build();
-        System.out.println(advancedUserSearchDAO.findUsers(dto));
-    }
+//    @PostConstruct
+//    public void test(){
+//        AdvancedUserSearchDTO dto = AdvancedUserSearchDTO.builder().tradesManSubCategoryId(53L).build();
+//        System.out.println(advancedUserSearchDAO.findUsers(dto));
+//    }
+//    @PostConstruct
+//    public void test() throws NoSuchAlgorithmException, InvalidKeySpecException {
+//        System.out.println(adminService.findByEmail("testeidhashsneidneid@edined.com"));
+//   //adminService.login(new LoginDTO("HASHBCRYPTsneidneid@edined.com","Tews_ab1fbd733e76"));
+//   ;
+//
+//    }
+
+
+//    @PostConstruct
+//    public void test(){
+//        System.out.println(bCryptPasswordEncoder.encode("Super@admin123"));
+//    }
+
+//    @PostConstruct
+//    public void test(){
+//        customerService.deleteCustomerById(2L);
+//    }
+
 }
 
 
