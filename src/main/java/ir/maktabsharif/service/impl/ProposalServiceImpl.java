@@ -99,14 +99,18 @@ public class ProposalServiceImpl implements ProposalService {
             throw new ConstraintViolationException(violations);
 
         repository.save(proposal);
+        tradesMan.setNumberOfProposalsSent(tradesMan.getNumberOfProposalsSent()+1);
+        tradesManService.saveJustForDeveloperUse(tradesMan);
     }
 
     /**this mehtod was edited heavily during phase3 to remove security context*/
     @Override
-    public List<FoundProposalDTO> findByTaskId(Long taskId) {
+    public List<FoundProposalDTO> findByTaskId(Long taskId,Long cId) {
         Optional<Task> taskOptional = repository.findTaskByTaskId(taskId);
         if (taskOptional.isEmpty())
             throw new InvalidInputException("Task not found or could not be fetched! Make sure the task Id is valid!");
+        if (!taskOptional.get().getCustomer().getId().equals(cId))
+            throw new InputMismatchException("Customers can only see proposals of their own task!");
         List<Proposal> proposalList = repository.findByTaskId(taskId);
         if (proposalList.size() == 0)
             throw new NoSuchElementException("There are no proposals for this task yet!");
@@ -114,6 +118,37 @@ public class ProposalServiceImpl implements ProposalService {
         for (Proposal p : proposalList)
             proposalDTOs.add(mapToDTO(p));
         return proposalDTOs;
+    }
+
+    @Override
+    public List<FoundProposalDTO> findByTaskId(Long taskId) {
+        List<Proposal> proposalList = repository.findByTaskId(taskId);
+        if (proposalList.size() == 0)
+            throw new NoSuchElementException("There are no proposals for this task yet!");
+        List<FoundProposalDTO> proposalDTOs = new ArrayList<>();
+        for (Proposal p : proposalList)
+            proposalDTOs.add(mapToDTO(p));
+        return proposalDTOs;
+    }
+
+    @Override
+    public List<FoundProposalDTO> findProposalsByTaskIdSortByTradesManScoreAscending(Long taskId,Long cId) {
+        List<FoundProposalDTO> list=findByTaskId(taskId,cId);
+        return list.stream()
+                .sorted((p1, p2) ->
+                        Float.compare(
+                                repository.findTradesmanByTradesManId(p1.getTradesManId()).get().getRating()
+                                , repository.findTradesmanByTradesManId(p2.getTradesManId()).get().getRating()
+                        )
+                ).collect(Collectors.toList());
+    }
+
+    @Override
+    public List<FoundProposalDTO> findProposalsByTaskIdSortByProposedPriceAscending(Long taskId,Long cId) {
+        List<FoundProposalDTO> list=findByTaskId(taskId, cId);
+        return list.stream()
+                .sorted(Comparator.comparingDouble(FoundProposalDTO::getProposedPrice))
+                .collect(Collectors.toList());
     }
 
     @Override
