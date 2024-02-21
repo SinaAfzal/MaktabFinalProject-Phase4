@@ -1,7 +1,7 @@
 package ir.maktabsharif.util.exception;
 
+import jakarta.mail.MessagingException;
 import org.hibernate.exception.ConstraintViolationException;
-import org.springframework.boot.autoconfigure.web.embedded.EmbeddedWebServerFactoryCustomizerAutoConfiguration;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -18,79 +18,82 @@ import java.util.NoSuchElementException;
 @ControllerAdvice
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler
+    @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<String> accessDeniedExceptionHandler(AccessDeniedException exception){
         return new ResponseEntity<>(exception.getMessage(), HttpStatus.FORBIDDEN);
     }
 
-    @ExceptionHandler
+    @ExceptionHandler(ExistingEntityCannotBeFetchedException.class)
     public ResponseEntity<String> existingEntityCannotBeFetchedExceptionHandler(ExistingEntityCannotBeFetchedException exception){
         return new ResponseEntity<>(exception.getMessage(),HttpStatus.NOT_FOUND);
     }
 
-    @ExceptionHandler
+    @ExceptionHandler(InvalidInputException.class)
     public ResponseEntity<String> invalidInputExceptionHandler(InvalidInputException exception){
         return new ResponseEntity<>(exception.getMessage(),HttpStatus.CONFLICT);
     }
 
-    @ExceptionHandler
+    @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<String> illegalArgumentExceptionHandler(IllegalArgumentException exception){
         return new ResponseEntity<>(exception.getMessage(),HttpStatus.CONFLICT);
     }
 
-    @ExceptionHandler
+    @ExceptionHandler(NoSuchElementException.class)
     public ResponseEntity<String> noSuchElementExceptionHandler(NoSuchElementException exception){
         return new ResponseEntity<>(exception.getMessage(),HttpStatus.CONFLICT);
     }
 
-    @ExceptionHandler
+    @ExceptionHandler(NoSuchAlgorithmException.class)
     public ResponseEntity<String> noSuchAlgorithmExceptionHandler(NoSuchAlgorithmException exception){
         return new ResponseEntity<>(exception.getMessage(),HttpStatus.CONFLICT);
     }
 
-    @ExceptionHandler
+    @ExceptionHandler(InputMismatchException.class)
     public ResponseEntity<String> inputMismatchExceptionHandler(InputMismatchException exception){
         return new ResponseEntity<>(exception.getMessage(),HttpStatus.CONFLICT);
     }
 
-    @ExceptionHandler //todo check to see if the exceptions is loaded from org.hibernate package
+    @ExceptionHandler(ConstraintViolationException.class) //todo check to see if the exceptions is loaded from org.hibernate package
     public ResponseEntity<String> constraintViolationExceptionHandler(ConstraintViolationException exception){
         return new ResponseEntity<>(exception.getMessage(),HttpStatus.CONFLICT);
     }
 
-    @ExceptionHandler
+    @ExceptionHandler(IllegalCallerException.class)
     public ResponseEntity<String> illegalCallerExceptionHandler(IllegalCallerException exception){
         return new ResponseEntity<>(exception.getMessage(),HttpStatus.CONFLICT);
     }
-    @ExceptionHandler
+    @ExceptionHandler(InvalidKeySpecException.class)
     public ResponseEntity<String> invalidKeySpecExceptionHandler(InvalidKeySpecException exception){
         return new ResponseEntity<>(exception.getMessage(),HttpStatus.CONFLICT);
     }
-    @ExceptionHandler
+    @ExceptionHandler(IOException.class)
     public ResponseEntity<String> ioExceptionHandler(IOException exception){
         return new ResponseEntity<>(exception.getMessage(),HttpStatus.CONFLICT);
     }
-    @ExceptionHandler
+    @ExceptionHandler(NullPointerException.class)
     public ResponseEntity<String> nullPointerExceptionHandler(NullPointerException exception){
         return new ResponseEntity<>(exception.getMessage(),HttpStatus.CONFLICT);
     }
-    @ExceptionHandler
+    @ExceptionHandler(jakarta.validation.ConstraintViolationException.class)
     public ResponseEntity<String> constraintViolationExceptionHandler(jakarta.validation.ConstraintViolationException exception){
         return new ResponseEntity<>(exception.getMessage(),HttpStatus.CONFLICT);
     }
-    @ExceptionHandler
+    @ExceptionHandler(InterruptedException.class)
     public ResponseEntity<String> interruptedExceptionHandler(InterruptedException exception){
         return new ResponseEntity<>(exception.getMessage(),HttpStatus.CONFLICT);
     }
-    @ExceptionHandler
+    @ExceptionHandler(TimeLimitExceededException.class)
     public ResponseEntity<String> timeLimitExceededExceptionHandler(TimeLimitExceededException exception){
         return new ResponseEntity<>(exception.getMessage(),HttpStatus.GATEWAY_TIMEOUT);
     }
-    @ExceptionHandler
+    @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<String> methodArgumentNotValidExceptionHandler(MethodArgumentNotValidException exception){
-
         return new ResponseEntity<>("invalid input pattern",HttpStatus.CONFLICT);
     }
 
+    @ExceptionHandler(MessagingException.class)
+    public ResponseEntity<String> messagingExceptionHandler(MessagingException exception){
+        return new ResponseEntity<>(exception.getMessage(),HttpStatus.CONFLICT);
+    }
 
 }
