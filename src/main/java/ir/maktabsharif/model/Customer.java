@@ -16,17 +16,21 @@ import lombok.experimental.FieldDefaults;
 public class Customer extends BaseUser {
 
     Double purchasedBalance;
+    Long numberOfRequestedTasks=0L;
+    Long numberOfDoneTasks=0L;
 
     @Override
     public String toString() {
         return "Customer{" +
                 "purchasedBalance=" + purchasedBalance +
-                ", id=" + id +
+                ", numberOfRequestedTasks=" + numberOfRequestedTasks +
+                ", numberOfDoneTasks=" + numberOfDoneTasks +
                 ", firstName='" + firstName + '\'' +
                 ", lastName='" + lastName + '\'' +
                 ", role=" + role +
                 ", email='" + email + '\'' +
                 ", isActive=" + isActive +
+                ", isEmailVerified=" + isEmailVerified +
                 ", registrationDateTime=" + registrationDateTime +
                 ", id=" + id +
                 '}';

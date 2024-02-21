@@ -30,6 +30,8 @@ public class Task extends BaseEntity {
     @ManyToOne
     TradesMan tradesManWhoGotTheJob;//todo instead of tradesman you should put the winner proposal
     @OneToOne
+    Proposal selectedProposal;
+    @ManyToOne
     Customer customer;
     @NotBlank
     @Size(min = 10, max = 300)

@@ -9,10 +9,15 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.validation.annotation.Validated;
 
 
 import java.time.LocalDateTime;
+import java.util.Collection;
+import java.util.List;
 
 
 @AllArgsConstructor
@@ -20,7 +25,7 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "users")
 @DiscriminatorColumn(name = "user-type")
-public class BaseUser extends BaseEntity {
+public class BaseUser extends BaseEntity implements UserDetails {
     //todo add field holding system messages
     //todo add entity for support tickets
     //todo add fields/entities to record history of each change in each entity
@@ -33,7 +38,8 @@ public class BaseUser extends BaseEntity {
     @Email
     String email;
     String password;//since password is going to be hashed, validation of password is done in util.Validation class
-    boolean isActive = true;// todo handle with email activation or other policies!
+    boolean isActive = false;
+    boolean isEmailVerified=false;
     LocalDateTime registrationDateTime;
 
     public String getFirstName() {
@@ -52,8 +58,44 @@ public class BaseUser extends BaseEntity {
         return email;
     }
 
+    public boolean isEmailVerified() {
+        return isEmailVerified;
+    }
+
+
+
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return List.of(new SimpleGrantedAuthority(role.name()));
+    }
+
     public String getPassword() {
         return password;
+    }
+
+    @Override
+    public String getUsername() {
+        return email;
+    }
+
+    @Override
+    public boolean isAccountNonExpired() {
+        return true;
+    }
+
+    @Override
+    public boolean isAccountNonLocked() {
+        return true;
+    }
+
+    @Override
+    public boolean isCredentialsNonExpired() {
+        return true;
+    }
+
+    @Override
+    public boolean isEnabled() {
+        return isEmailVerified;
     }
 
     public boolean isActive() {
@@ -91,7 +133,9 @@ public class BaseUser extends BaseEntity {
     public void setRegistrationDateTime(LocalDateTime registrationDateTime) {
         this.registrationDateTime = registrationDateTime;
     }
-
+    public void setEmailVerified(boolean emailVerified) {
+        isEmailVerified = emailVerified;
+    }
     @Override
     public String toString() {
         return "BaseUser{" +

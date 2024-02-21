@@ -5,6 +5,8 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
+import java.util.Arrays;
+
 
 @Getter
 @Setter
@@ -20,21 +22,28 @@ public class TradesMan extends BaseUser {
     byte[] avatar;
     Float rating=0F;
     Double earnedCredit;
+    Long numberOfDoneTasks=0L;
+    Long numberOfProposalsSent=0L;
 //todo you had to put the ManyToMany relation with categories here! not in the categories :(
+
 
     @Override
     public String toString() {
         return "TradesMan{" +
                 "status=" + status +
+                ", avatar=" + Arrays.toString(avatar) +
                 ", rating=" + rating +
                 ", earnedCredit=" + earnedCredit +
+                ", numberOfDoneTasks=" + numberOfDoneTasks +
+                ", numberOfProposalsSent=" + numberOfProposalsSent +
                 ", firstName='" + firstName + '\'' +
                 ", lastName='" + lastName + '\'' +
                 ", role=" + role +
                 ", email='" + email + '\'' +
                 ", isActive=" + isActive +
+                ", isEmailVerified=" + isEmailVerified +
                 ", registrationDateTime=" + registrationDateTime +
-                ", Id=" + id +
+                ", id=" + id +
                 '}';
     }
 }

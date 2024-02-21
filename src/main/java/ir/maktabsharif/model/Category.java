@@ -25,11 +25,11 @@ public class Category extends BaseEntity {
     @NotBlank
     String categoryName;
     @ManyToOne
-    @OnDelete(action = OnDeleteAction.NO_ACTION)
+    @OnDelete(action = OnDeleteAction.CASCADE)
     Category parentCategory;
     String description;
     Double basePrice;
-    @ManyToMany(cascade = CascadeType.REMOVE, fetch = FetchType.EAGER)//unidirectional
+    @ManyToMany(fetch = FetchType.EAGER)//unidirectional
     @JoinTable(name = "category_tradesmen")
     Set<TradesMan> tradesMen = new HashSet<>(); //todo entitygraph
 
