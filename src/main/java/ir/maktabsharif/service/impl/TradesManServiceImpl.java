@@ -1,22 +1,25 @@
 package ir.maktabsharif.service.impl;
 
 
-import ir.maktabsharif.model.Admin;
 import ir.maktabsharif.model.TradesMan;
 import ir.maktabsharif.model.enumeration.TaskStatus;
 import ir.maktabsharif.model.enumeration.TradesManStatus;
 import ir.maktabsharif.model.enumeration.UserRole;
 import ir.maktabsharif.repository.TradesManRepository;
+import ir.maktabsharif.repository.UserRepository;
+import ir.maktabsharif.service.EmailConfirmationTokenService;
+import ir.maktabsharif.service.EmailService;
 import ir.maktabsharif.service.TradesManService;
-import ir.maktabsharif.service.base.BaseUserServiceImpl;
 import ir.maktabsharif.service.dto.request.TradesManRegistrationDTO;
 import ir.maktabsharif.service.dto.response.FoundTradesManDTO;
+import ir.maktabsharif.service.dto.response.ResponseDTO;
 import ir.maktabsharif.util.*;
-import ir.maktabsharif.util.exception.AccessDeniedException;
 import ir.maktabsharif.util.exception.ExistingEntityCannotBeFetchedException;
 import ir.maktabsharif.util.exception.InvalidInputException;
+import jakarta.mail.MessagingException;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,12 +33,16 @@ import java.time.LocalDateTime;
 import java.util.*;
 
 @Service
+@Transactional(readOnly = true)
 public class TradesManServiceImpl extends
-        BaseUserServiceImpl<TradesMan, TradesManRepository>
+        UserServiceImpl
         implements TradesManService {
 
-    public TradesManServiceImpl(TradesManRepository repository) {
-        super(repository);
+    private final TradesManRepository repository;
+
+    public TradesManServiceImpl(UserRepository userRepository, EmailConfirmationTokenService emailConfirmationTokenService, EmailService emailService, BCryptPasswordEncoder bCryptPasswordEncoder, TradesManRepository repository) {
+        super(userRepository, emailConfirmationTokenService, emailService, bCryptPasswordEncoder);
+        this.repository = repository;
     }
 
     @Override
@@ -46,19 +53,20 @@ public class TradesManServiceImpl extends
     }
 
     public TradesMan findById_ForDevelopmentOnly(Long tradesmanId) {
-        return repository.findById(tradesmanId).orElseThrow(()->new InvalidInputException("Tradesman not found!"));
+        return repository.findTradesManById(tradesmanId).orElseThrow(() -> new InvalidInputException("Tradesman not found!"));
     }
 
     @Override
     public void downloadTradesManAvatar(Long tradesManId, String savePath) throws IOException {
         if (!repository.existsById(tradesManId))
             throw new InvalidInputException("TradesMan not found!");
-        byte[] avatar = repository.findById(tradesManId).get().getAvatar();
+        byte[] avatar = repository.findTradesManById(tradesManId).get().getAvatar();
         Files.write(Paths.get(savePath), avatar);
     }
 
     @Override
-    public void register(TradesManRegistrationDTO trdRegDTO) throws IOException, InterruptedException, NoSuchAlgorithmException, InvalidKeySpecException {
+    @Transactional
+    public void register(TradesManRegistrationDTO trdRegDTO) throws IOException, InterruptedException, NoSuchAlgorithmException, InvalidKeySpecException, MessagingException {
         SemaphoreUtil.acquireNewUserSemaphore();
         try {
             String imagePath = trdRegDTO.getImagePath();
@@ -83,30 +91,34 @@ public class TradesManServiceImpl extends
             tradesMan.setStatus(TradesManStatus.NEW);
             tradesMan.setEarnedCredit(0.00);
             tradesMan.setEmail(email);
-            tradesMan.setRole(UserRole.TRADESMAN);
+            tradesMan.setRole(UserRole.ROLE_TRADESMAN);
             tradesMan.setRegistrationDateTime(LocalDateTime.now());
             tradesMan.setFirstName(firstName);
             tradesMan.setLastName(lastName);
-            String hashedPassword = getHashedPassword(password);
+            String hashedPassword = bCryptPasswordEncoder.encode(password);
             tradesMan.setPassword(hashedPassword);
             tradesMan.setActive(false);
+            tradesMan.setEmailVerified(false);
             Set<ConstraintViolation<TradesMan>> violations = ApplicationContext.getValidator().validate(tradesMan);
             if (!violations.isEmpty())
                 throw new ConstraintViolationException(violations);
             repository.save(tradesMan);
+            sendEmailVerificationEmail(email);
         } finally {
             SemaphoreUtil.releaseNewUserSemaphore();
         }
     }
 
     @Override
+    @Transactional
     public TradesMan saveJustForDeveloperUse(TradesMan tradesMan) {
         return repository.save(tradesMan);
     }
 
     @Override
+    @Transactional
     public void deleteTradesManById(Long tradesManId) {
-        Optional<TradesMan> tradesManOptional = repository.findById(tradesManId);
+        Optional<TradesMan> tradesManOptional = repository.findTradesManById(tradesManId);
         if (tradesManOptional.isEmpty())
             throw new IllegalArgumentException("tradesMan could not be fetched!");
         if (repository.findTasksByWinnerTradesManAndStatus(tradesManId, TaskStatus.DONE).size() != 0 ||
@@ -117,28 +129,25 @@ public class TradesManServiceImpl extends
     }
 
     @Override
+    @Transactional
     public void changeTradesManStatus(Long tradesManId, TradesManStatus status) {
-//        if (!(SecurityContext.getCurrentUser() instanceof Admin))
-//            throw new AccessDeniedException("Only an admin can access this service!");
         if (!repository.existsById(tradesManId))
             throw new IllegalArgumentException("TradesMan was not found!");
-        TradesMan tradesMan = repository.findById(tradesManId).orElseThrow(() -> new ExistingEntityCannotBeFetchedException("TradesMan exists but could not be fetched!"));
+        TradesMan tradesMan = repository.findTradesManById(tradesManId).orElseThrow(() -> new ExistingEntityCannotBeFetchedException("TradesMan exists but could not be fetched!"));
         if (repository.findTasksByWinnerTradesManAndStatus(tradesManId, TaskStatus.STARTED).size() != 0 ||
                 repository.findTasksByWinnerTradesManAndStatus(tradesManId, TaskStatus.DONE).size() != 0 ||
                 repository.findTasksByWinnerTradesManAndStatus(tradesManId, TaskStatus.AWAITING_TRADESMAN_ARRIVAL).size() != 0)
             throw new InputMismatchException("TradesMan's status cannot be changed when he/she has active tasks!");
-        if (status == TradesManStatus.APPROVED)
-            tradesMan.setActive(true);
-        else if (tradesMan.getStatus() == TradesManStatus.APPROVED)
-            tradesMan.setActive(false);
+        tradesMan.setActive(status.equals(TradesManStatus.APPROVED));
+        if (status.equals(TradesManStatus.APPROVED) && !tradesMan.isEmailVerified())
+            throw new InputMismatchException("User's email has not been verified yet!");
+        tradesMan.setEmailVerified(!status.equals(TradesManStatus.NEW));
         tradesMan.setStatus(status);
         repository.save(tradesMan);
     }
 
     @Override
     public List<FoundTradesManDTO> findTradesMenByStatus(TradesManStatus status) {
-//        if (!(SecurityContext.getCurrentUser() instanceof Admin))
-//            throw new AccessDeniedException("Only admins have access to this service!");
         List<TradesMan> tradesManList = repository.findTradesManByStatus(status);
         if (tradesManList.isEmpty())
             throw new NoSuchElementException("no tradesmen with that status was found!");
@@ -156,6 +165,26 @@ public class TradesManServiceImpl extends
     }
 
     @Override
+    public boolean tradesManExistsByEmail(String email) {
+        return repository.existsBaseUserByEmailAndRole(email, UserRole.ROLE_TRADESMAN);
+    }
+
+    @Override
+    public ResponseDTO findTradesManByEmail(String email) {
+        Optional<TradesMan> tradesManOptional = repository.findTradesManByEmail(email);
+        if (tradesManOptional.isEmpty())
+            throw new NoSuchElementException("No user of that type was found!");
+        return mapToDTO(tradesManOptional.get());
+    }
+
+    @Override
+    public Double getEarnedCredit(Long tradesmanId) {
+        if (!repository.existsById(tradesmanId))
+            throw new InvalidInputException("Tradesman not found!");
+        return repository.getEarnedCreditBalance(tradesmanId);
+    }
+
+
     public FoundTradesManDTO mapToDTO(TradesMan tradesMan) {
         FoundTradesManDTO foundTradesManDTO = new FoundTradesManDTO();
         foundTradesManDTO.setActive(tradesMan.isActive());
@@ -169,6 +198,9 @@ public class TradesManServiceImpl extends
         foundTradesManDTO.setFirstName(tradesMan.getFirstName());
         foundTradesManDTO.setStatus(tradesMan.getStatus());
         foundTradesManDTO.setRole(tradesMan.getRole());
+        foundTradesManDTO.setEmailVerified(tradesMan.isEmailVerified());
+        foundTradesManDTO.setNumberOfDoneTasks(tradesMan.getNumberOfDoneTasks());
+        foundTradesManDTO.setNumberOfProposalsSent(tradesMan.getNumberOfProposalsSent());
         return foundTradesManDTO;
     }
 
