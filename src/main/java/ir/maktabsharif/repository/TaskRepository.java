@@ -8,11 +8,14 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import javax.swing.text.html.Option;
 import java.util.List;
 import java.util.Optional;
 
+@Repository
 public interface TaskRepository extends JpaRepository<Task, Long> {
     Optional<Task> findById(Long categoryId);
 
@@ -28,7 +31,13 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
     @Query("select t from Task t where t.tradesManWhoGotTheJob.id=:tId and t.status=:status")
     List<Task> findTasksByWinnerTradesManAndStatus(@Param("tId") Long tradeManId, @Param("status") TaskStatus status);
 
-    void deleteById(Long taskId);
+    @Modifying
+    @Transactional
+    @Query(value = "UPDATE tasks t SET selected_proposal_id=NULL WHERE id=:tId ;" +
+            "DELETE FROM proposal p WHERE task_id=:tId ;" +
+            "DELETE FROM tasks t WHERE id=:tId "
+            , nativeQuery = true)
+    void deleteById(@Param("tId") Long taskId);
 
     @Query("select c from Category c where c.id=:cId")
     Optional<Category> findCategoryByCategoryId(@Param("cId") Long categoryId);
@@ -61,4 +70,12 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
     @Modifying
     @Query("update Customer c set c.purchasedBalance=:balance where c.id=:cId")
     void updateCustomerBalance(@Param("cId") Long customerId, @Param("balance") Double newBalance);
+
+    @Modifying
+    @Query("update Customer c set c.numberOfDoneTasks=:numDoneTasks where c.id=:cId")
+    void updateCustomerNumberOfDoneTasks(@Param("cId") Long customerId, @Param("numDoneTasks") Long numberOfDoneTasks);
+
+    @Modifying
+    @Query("update Customer c set c.numberOfRequestedTasks=:numReqTasks where c.id=:cId")
+    void updateCustomerNumberOfRequestedTasks(@Param("cId") Long customerId, @Param("numReqTasks") Long numberOfRequestedTasks);
 }
