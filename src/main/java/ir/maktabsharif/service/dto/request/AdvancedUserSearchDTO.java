@@ -35,7 +35,8 @@ public class AdvancedUserSearchDTO implements RequestDTO {
      * Here's an example of how to do this:
      * <code>
      *
-     * @PostMapping("/date") public void date(@RequestParam("localDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate localDate) {
+     * @PostMapping("/date")
+     * public void date(@RequestParam("localDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate localDate) {
      * // Your code here
      * }
      *
@@ -53,9 +54,20 @@ public class AdvancedUserSearchDTO implements RequestDTO {
     Double tradesManEarnedCreditMax;
     Long tradesManSubCategoryId;
 
+    Long minNumberOfProposalsSent;
+    Long maxNumberOfProposalsSent;
+
+
     //customer specific:
     Double customerPurchasedBalanceMin;
     Double customerPurchasedBalanceMax;
+
+    Long minNumberOfRequestedTasks;
+    Long maxNumberOfRequestedTasks;
+
+    //customer and tradesman specific:
+    Long minNumberOfDoneTasks;
+    Long maxNumberOfDoneTasks;
 
     //following getter is written manually because in case of boolean primitive type variable LOMBOK getter would be isActive() as the case in the BaseUser entity. but here the Boolean reference type variable is used and LOMBOK getter for it would be getIsActive(). in order to maintain the same method names across the application this getter is manually written.
     public Boolean isActive(){

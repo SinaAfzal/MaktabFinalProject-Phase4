@@ -17,6 +17,8 @@ public class FoundTaskDTO implements ResponseDTO {
     Long id;
     Long subCategoryId;
     Long tradesManWhoGotTheJobId;
+    Long selectedProposalId;
+    Double winnerPrice;
     Long customerId;
     String description;
     Float score;

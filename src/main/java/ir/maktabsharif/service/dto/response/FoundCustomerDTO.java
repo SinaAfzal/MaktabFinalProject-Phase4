@@ -22,4 +22,7 @@ public class FoundCustomerDTO implements ResponseDTO {
     boolean isActive;
     LocalDateTime registrationDateTime;
     Double purchasedBalance;
+    Long numberOfRequestedTasks;
+    Long numberOfDoneTasks;
+    boolean isEmailVerified;
 }

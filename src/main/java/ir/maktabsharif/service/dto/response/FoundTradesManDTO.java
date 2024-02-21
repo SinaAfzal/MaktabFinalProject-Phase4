@@ -26,4 +26,7 @@ public class FoundTradesManDTO implements ResponseDTO {
     byte[] avatar;
     Float rating;
     Double earnedCredit;
+    boolean isEmailVerified;
+    Long numberOfDoneTasks;
+    Long numberOfProposalsSent;
 }

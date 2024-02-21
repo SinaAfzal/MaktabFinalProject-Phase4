@@ -20,5 +20,6 @@ public class FoundAdminDTO implements ResponseDTO{
     String email;
     boolean isActive;
     LocalDateTime registrationDateTime;
+    boolean isEmailVerified;
 
 }
