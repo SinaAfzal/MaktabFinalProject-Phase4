@@ -21,7 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.*;
 
 @Service
-@Transactional
+@Transactional(readOnly = true)
 public class CategoryServiceImpl implements
         CategoryService {
     private final CategoryRepository repository;
@@ -201,6 +201,7 @@ public class CategoryServiceImpl implements
     }
 
     @Override
+    @Transactional
     public void addTradesManToSubCategory(Long tradesManId, Long categoryId) throws InterruptedException {
         SemaphoreUtil.acquireNewCategorySemaphore();
         try {
