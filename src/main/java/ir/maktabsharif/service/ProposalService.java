@@ -18,7 +18,9 @@ public interface ProposalService  {
     List<FoundProposalDTO> findByTaskId(Long taskId,Long customerId);
     List<FoundProposalDTO> findByTaskId(Long taskId);
     List<FoundProposalDTO> findProposalsByTaskIdSortByTradesManScoreAscending(Long taskId, Long customerId);//todo sort directly by query because that way is faster.(Also compare the speed)
+    List<FoundProposalDTO> findProposalsByTaskIdSortByTradesManScoreAscendingWithQuery(Long taskId, Long customerId);
     List<FoundProposalDTO> findProposalsByTaskIdSortByProposedPriceAscending(Long taskId, Long customerId);//todo sort directly by query because that way is faster.(Also compare the speed)
+    List<FoundProposalDTO> findProposalsByTaskIdSortByProposedPriceAscendingWithQuery(Long taskId, Long customerId);
     List<FoundProposalDTO> findProposalsByTaskIdSortByTradesManScoreAscending(Long taskId);//todo sort directly by query because that way is faster.(Also compare the speed)
     List<FoundProposalDTO> findProposalsByTaskIdSortByProposedPriceAscending(Long taskId);//todo sort directly by query because that way is faster.(Also compare the speed)
 

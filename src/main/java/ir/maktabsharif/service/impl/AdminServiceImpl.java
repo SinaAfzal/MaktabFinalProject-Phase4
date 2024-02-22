@@ -113,4 +113,5 @@ public class AdminServiceImpl extends
         foundAdminDTO.setEmailVerified(admin.isEmailVerified());
         return foundAdminDTO;
     }
+
 }

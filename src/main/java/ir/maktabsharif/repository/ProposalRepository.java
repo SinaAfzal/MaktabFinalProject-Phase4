@@ -1,6 +1,7 @@
 package ir.maktabsharif.repository;
 
 
+import com.fasterxml.jackson.databind.annotation.JsonAppend;
 import ir.maktabsharif.model.Category;
 import ir.maktabsharif.model.Proposal;
 import ir.maktabsharif.model.Task;
@@ -26,6 +27,11 @@ public interface ProposalRepository extends JpaRepository<Proposal, Long> {
     List<Proposal> findByTradesManId(Long tradesManId);
 
     List<Proposal> findByTaskId(Long taskId);
+    @Query(value = "select p from Proposal p join Task t on p.taskId=t.id join TradesMan tr on p.tradesManId=tr.id where p.taskId=:taskId order by tr.rating asc ")
+    List<Proposal> findProposalsByTaskIdSortByTradesManScoreAscending(@Param("taskId") Long taskId);
+
+    @Query(value = "select p from Proposal p join Task t on p.taskId=t.id where p.taskId=:taskId order by p.proposedPrice asc ")
+    List<Proposal> findProposalsByTaskIdSortByProposedPriceAscending(@Param("taskId") Long taskId);
 
     @Query("select t from Task t where t.id=:tId")
     Optional<Task> findTaskByTaskId(@Param("tId") Long taskId);

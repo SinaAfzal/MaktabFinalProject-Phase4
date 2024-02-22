@@ -48,7 +48,6 @@ public class CustomerController {
     }
 
 
-
     @DeleteMapping("/delete-customer")
     public ResponseEntity<Void> deleteCustomerById() {
         Customer principal = (Customer) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
@@ -77,7 +76,7 @@ public class CustomerController {
     public ResponseEntity<List<FoundProposalDTO>> findProposalsByTaskId(@RequestParam Long taskId) {
         Customer principal = (Customer) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         Long cId = principal.getId();
-        List<FoundProposalDTO> dtoList = proposalService.findByTaskId(taskId,cId);
+        List<FoundProposalDTO> dtoList = proposalService.findByTaskId(taskId, cId);
         return new ResponseEntity<>(dtoList, HttpStatus.OK);
     }
 
@@ -85,7 +84,15 @@ public class CustomerController {
     public ResponseEntity<List<FoundProposalDTO>> findProposalsByTaskIdSortByProposedPriceAscending(@RequestParam Long taskId) {
         Customer principal = (Customer) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         Long cId = principal.getId();
-        List<FoundProposalDTO> dtoList = proposalService.findProposalsByTaskIdSortByProposedPriceAscending(taskId,cId);
+        List<FoundProposalDTO> dtoList = proposalService.findProposalsByTaskIdSortByProposedPriceAscending(taskId, cId);
+        return new ResponseEntity<>(dtoList, HttpStatus.OK);
+    }
+
+    @GetMapping("/find-proposals-of-task-sort-by-price-withQuery")
+    public ResponseEntity<List<FoundProposalDTO>> findProposalsByTaskIdSortByProposedPriceAscendingWithQuery(@RequestParam Long taskId) {
+        Customer principal = (Customer) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        Long cId = principal.getId();
+        List<FoundProposalDTO> dtoList = proposalService.findProposalsByTaskIdSortByProposedPriceAscendingWithQuery(taskId, cId);
         return new ResponseEntity<>(dtoList, HttpStatus.OK);
     }
 
@@ -93,10 +100,17 @@ public class CustomerController {
     public ResponseEntity<List<FoundProposalDTO>> findProposalsByTaskIdSortByTradesManScoreAscending(@RequestParam Long taskId) {
         Customer principal = (Customer) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         Long cId = principal.getId();
-        List<FoundProposalDTO> dtoList = proposalService.findProposalsByTaskIdSortByTradesManScoreAscending(taskId,cId);
+        List<FoundProposalDTO> dtoList = proposalService.findProposalsByTaskIdSortByTradesManScoreAscending(taskId, cId);
         return new ResponseEntity<>(dtoList, HttpStatus.OK);
     }
 
+    @GetMapping("/find-proposals-of-task-sort-by-tradesman-rating-withQuery")
+    public ResponseEntity<List<FoundProposalDTO>> findProposalsByTaskIdSortByTradesManScoreAscendingWithQuery(@RequestParam Long taskId) {
+        Customer principal = (Customer) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        Long cId = principal.getId();
+        List<FoundProposalDTO> dtoList = proposalService.findProposalsByTaskIdSortByTradesManScoreAscendingWithQuery(taskId, cId);
+        return new ResponseEntity<>(dtoList, HttpStatus.OK);
+    }
 
     @PostMapping("/request-task")
     public ResponseEntity<Void> requestTask(@RequestBody TaskRequestDTO taskRequestDTO) {
@@ -163,9 +177,9 @@ public class CustomerController {
     }
 
     @GetMapping("/get-purchased-balance")
-     public ResponseEntity<Double> getBalance(){
+    public ResponseEntity<Double> getBalance() {
         Customer principal = (Customer) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         Long id = principal.getId();
-        return new ResponseEntity<>(customerService.getPurchasedCredit(id),HttpStatus.OK);
+        return new ResponseEntity<>(customerService.getPurchasedCredit(id), HttpStatus.OK);
     }
 }
