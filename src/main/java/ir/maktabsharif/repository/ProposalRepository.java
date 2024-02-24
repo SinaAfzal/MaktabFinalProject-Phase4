@@ -44,6 +44,8 @@ public interface ProposalRepository extends JpaRepository<Proposal, Long> {
 
     @Query("select c from Category c where c.id=:cId")
     Optional<Category> findCategoryByCategoryId(@Param("cId") Long categoryId);
+    @Query("select count(p)>0 from Proposal p where p.taskId=:taskId and p.tradesManId=:tradesmanId")
+    boolean didTradesmanSendProposalForTaskBefore(@Param("tradesmanId") Long tradesmanId,@Param("taskId") Long taskId);
 
     @Transactional
     @Modifying
