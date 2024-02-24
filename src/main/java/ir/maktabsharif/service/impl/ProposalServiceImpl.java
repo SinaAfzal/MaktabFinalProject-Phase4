@@ -67,6 +67,8 @@ public class ProposalServiceImpl implements ProposalService {
         else if (!tradesMan.getStatus().equals(TradesManStatus.APPROVED))
             throw new AccessDeniedException("Your account is not approved by the site admin yet!");
         Long taskId = tskProDTO.getTaskId();
+        if (repository.didTradesmanSendProposalForTaskBefore(tradesmanId,taskId))
+            throw new IllegalCallerException("You cannot send multiple proposals for the same task!");
         Double proposedPrice = tskProDTO.getProposedPrice();
         LocalDateTime proposedStartTime = tskProDTO.getProposedStartTime();
         Integer requiredHours = tskProDTO.getRequiredHours();
