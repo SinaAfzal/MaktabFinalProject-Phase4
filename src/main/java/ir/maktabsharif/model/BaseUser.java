@@ -8,7 +8,9 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -25,6 +27,7 @@ import java.util.List;
 @Entity
 @Table(name = "users")
 @DiscriminatorColumn(name = "user-type")
+@SuperBuilder
 public class BaseUser extends BaseEntity implements UserDetails {
     //todo add field holding system messages
     //todo add entity for support tickets
@@ -38,7 +41,9 @@ public class BaseUser extends BaseEntity implements UserDetails {
     @Email
     String email;
     String password;//since password is going to be hashed, validation of password is done in util.Validation class
+    @Builder.Default
     boolean isActive = false;
+    @Builder.Default
     boolean isEmailVerified=false;
     LocalDateTime registrationDateTime;
 

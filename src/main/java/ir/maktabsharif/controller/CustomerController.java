@@ -113,7 +113,7 @@ public class CustomerController {
     }
 
     @PostMapping("/request-task")
-    public ResponseEntity<Void> requestTask(@RequestBody TaskRequestDTO taskRequestDTO) {
+    public ResponseEntity<Void> requestTask(@RequestBody @Valid TaskRequestDTO taskRequestDTO) {
         Customer principal = (Customer) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         Long cId = principal.getId();
         taskService.requestTask(taskRequestDTO, cId);
@@ -121,7 +121,7 @@ public class CustomerController {
     }
 
     @PutMapping("/edit-task-request")
-    public ResponseEntity<Void> editTaskRequest(@RequestParam Long taskId, @RequestBody TaskRequestDTO taskRequestDTO) {
+    public ResponseEntity<Void> editTaskRequest(@RequestParam Long taskId, @RequestBody @Valid TaskRequestDTO taskRequestDTO) {
         Customer principal = (Customer) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         Long customerId = principal.getId();
         taskService.editTaskRequest(taskId, taskRequestDTO, customerId);

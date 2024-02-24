@@ -5,6 +5,7 @@ import jakarta.persistence.Entity;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
+import lombok.experimental.SuperBuilder;
 
 import java.time.LocalDateTime;
 
@@ -14,7 +15,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @Entity
-@Builder
+@SuperBuilder
 public class Proposal extends BaseEntity {
     @NotNull
     Long taskId;//unidirectional //todo needs to be indexed

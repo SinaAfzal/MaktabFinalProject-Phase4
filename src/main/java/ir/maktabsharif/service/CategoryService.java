@@ -19,7 +19,7 @@ public interface CategoryService {
     List<FoundCategoryDTO> findSubCategories(Long categoryId);
     List<FoundCategoryDTO> findAllParentCategories();
     void addCategory(CategoryDTO categoryDTO) throws InterruptedException;
-    void editCategory(Long categoryId,CategoryDTO categoryDTO) throws InterruptedException;
+    void editCategory(Long categoryId, CategoryDTO categoryDTO) throws InterruptedException;
     List<FoundCategoryDTO> findByTradesManId(Long tradesManId);
     void addTradesManToSubCategory(Long tradesManId,Long categoryId) throws InterruptedException;
     void removeTradesManFromSubCategory(Long tradesManId,Long categoryId) throws InterruptedException;

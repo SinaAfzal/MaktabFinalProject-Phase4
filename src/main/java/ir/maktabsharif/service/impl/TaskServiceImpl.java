@@ -10,14 +10,10 @@ import ir.maktabsharif.service.dto.request.SelectTradesManProposalDTO;
 import ir.maktabsharif.service.dto.request.TaskRatingDTO;
 import ir.maktabsharif.service.dto.request.TaskRequestDTO;
 import ir.maktabsharif.service.dto.response.FoundTaskDTO;
-import ir.maktabsharif.util.ApplicationContext;
 import ir.maktabsharif.util.Policy;
-import ir.maktabsharif.util.SecurityContext;
 import ir.maktabsharif.util.exception.AccessDeniedException;
 import ir.maktabsharif.util.exception.ExistingEntityCannotBeFetchedException;
 import ir.maktabsharif.util.exception.InvalidInputException;
-import jakarta.validation.ConstraintViolation;
-import jakarta.validation.ConstraintViolationException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -86,28 +82,21 @@ public class TaskServiceImpl implements TaskService {
         Customer customer = repository.findCustomerById(customerId).orElseThrow(() -> new InvalidInputException("customer not found!"));
         if (!customer.isActive())
             throw new AccessDeniedException("Only activated customer accounts are allowed to use this service!");
-        String description = taskRequestDTO.getDescription();
-        LocalDateTime taskDateAndTime = taskRequestDTO.getTaskDateAndTime();
-        String locationAddress = taskRequestDTO.getLocationAddress();
-        Long subCategoryId = taskRequestDTO.getSubCategoryId();
-        Category category = repository.findCategoryByCategoryId(subCategoryId).orElseThrow(
+        Category category = repository.findCategoryByCategoryId(taskRequestDTO.getSubCategoryId()).orElseThrow(
                 () -> new InvalidInputException("Please make sure the sub-category ID is correct!"));
         if (category.getParentCategory() == null)
             throw new InvalidInputException("You cannot create a task in a parent category! please select a sub-category!");
-        if (taskDateAndTime.isBefore(LocalDateTime.now()))
+        if ( taskRequestDTO.getTaskDateAndTime().isBefore(LocalDateTime.now()))
             throw new InvalidInputException("Task time cannot be in the past!");
         Task task = Task.builder().
                 status(TaskStatus.AWAITING_OFFER_BY_TRADESMEN).
-                taskDateTimeByCustomer(taskDateAndTime).
+                taskDateTimeByCustomer( taskRequestDTO.getTaskDateAndTime()).
                 customer(customer).
                 requestDateTime(LocalDateTime.now()).
-                description(description).
-                locationAddress(locationAddress).
-                subCategoryId(subCategoryId).
+                description(taskRequestDTO.getDescription()).
+                locationAddress(taskRequestDTO.getLocationAddress()).
+                subCategoryId(taskRequestDTO.getSubCategoryId()).
                 build();
-        Set<ConstraintViolation<Task>> violations = ApplicationContext.getValidator().validate(task);
-        if (!violations.isEmpty())
-            throw new ConstraintViolationException(violations);
         repository.save(task);
         repository.updateCustomerNumberOfRequestedTasks(customerId, customer.getNumberOfRequestedTasks() + 1);
     }
@@ -124,25 +113,18 @@ public class TaskServiceImpl implements TaskService {
             throw new AccessDeniedException("Only task creator can edit the task!");
         if (!task.getStatus().equals(TaskStatus.AWAITING_OFFER_BY_TRADESMEN))
             throw new AccessDeniedException("You cannot edit the task after receiving a proposal!");
-        String locationAddress = taskRequestDTO.getLocationAddress();
-        Long subCategoryId = taskRequestDTO.getSubCategoryId();
-        LocalDateTime taskDateAndTime = taskRequestDTO.getTaskDateAndTime();
-        String description = taskRequestDTO.getDescription();
-        Category category = repository.findCategoryByCategoryId(subCategoryId).orElseThrow(
+        Category category = repository.findCategoryByCategoryId(taskRequestDTO.getSubCategoryId()).orElseThrow(
                 () -> new InvalidInputException("Please make sure the sub-category ID is correct!"));
         if (category.getParentCategory() == null)
             throw new InvalidInputException("You cannot create a task in a parent category! please select a sub-category!");
-        if (taskDateAndTime.isBefore(LocalDateTime.now()))
+        if (taskRequestDTO.getTaskDateAndTime().isBefore(LocalDateTime.now()))
             throw new InvalidInputException("Task time cannot be in the past!");
 
-        task.setTaskDateTimeByCustomer(taskDateAndTime);
-        task.setDescription(description);
-        task.setLocationAddress(locationAddress);
-        task.setSubCategoryId(subCategoryId);
+        task.setTaskDateTimeByCustomer(taskRequestDTO.getTaskDateAndTime());
+        task.setDescription(taskRequestDTO.getDescription());
+        task.setLocationAddress(taskRequestDTO.getLocationAddress());
+        task.setSubCategoryId(taskRequestDTO.getSubCategoryId());
         task.setRequestDateTime(LocalDateTime.now());
-        Set<ConstraintViolation<Task>> violations = ApplicationContext.getValidator().validate(task);
-        if (!violations.isEmpty())
-            throw new ConstraintViolationException(violations);
         repository.save(task);
     }
 
@@ -228,9 +210,6 @@ public class TaskServiceImpl implements TaskService {
         Long tradesManId = tradesManWhoGotTheJob.getId();
         Float totalTradesManRating = tradesManWhoGotTheJob.getRating() + rating;
         repository.updateTradesManRating(tradesManId, totalTradesManRating);
-        Set<ConstraintViolation<Task>> violations = ApplicationContext.getValidator().validate(task);
-        if (!violations.isEmpty())
-            throw new ConstraintViolationException(violations);
         repository.save(task);
     }
 
@@ -339,9 +318,6 @@ public class TaskServiceImpl implements TaskService {
         task.setTradesManWhoGotTheJob(tradesMan);
         task.setSelectedProposal(proposal);
         task.setStatus(TaskStatus.AWAITING_TRADESMAN_ARRIVAL);
-        Set<ConstraintViolation<Task>> violations = ApplicationContext.getValidator().validate(task);
-        if (!violations.isEmpty())
-            throw new ConstraintViolationException(violations);
         repository.save(task);
     }
 

@@ -8,13 +8,10 @@ import ir.maktabsharif.repository.CategoryRepository;
 import ir.maktabsharif.service.CategoryService;
 import ir.maktabsharif.service.dto.request.CategoryDTO;
 import ir.maktabsharif.service.dto.response.FoundCategoryDTO;
-import ir.maktabsharif.util.ApplicationContext;
 import ir.maktabsharif.util.SemaphoreUtil;
 import ir.maktabsharif.util.exception.ExistingEntityCannotBeFetchedException;
 import ir.maktabsharif.util.exception.InvalidInputException;
 
-import jakarta.validation.ConstraintViolation;
-import jakarta.validation.ConstraintViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -90,42 +87,24 @@ public class CategoryServiceImpl implements
     public void addCategory(CategoryDTO categoryDTO) throws InterruptedException {
         SemaphoreUtil.acquireNewCategorySemaphore();
         try {
-            String categoryName = categoryDTO.getName();
-            if (existsByCategoryName(categoryName))
+            if (existsByCategoryName(categoryDTO.getName()))
                 throw new InvalidInputException("Duplicate category names are not allowed!");
-            String categoryDescription = categoryDTO.getDescription();
-            Double categoryBasePrice = categoryDTO.getBasePrice();
-            Long parentCategoryId = categoryDTO.getParentCategoryId();
-            boolean parentIdExists = false;
-            if (parentCategoryId != null)
-                parentIdExists = repository.existsById(parentCategoryId);
-            Category categoryToBeSaved = Category.builder().
-                    categoryName(categoryName).
-                    description(categoryDescription).
-                    basePrice(categoryBasePrice).
-                    build();
-            if (parentCategoryId == null) {
-                if (categoryBasePrice != null || categoryDescription != null)
+            Category categoryToBeSaved = Category.builder()
+                    .categoryName(categoryDTO.getName())
+                    .build();
+            if (categoryDTO.getParentCategoryId() == null) {//category to be saved is a parent-category
+                if (categoryDTO.getBasePrice() != null || categoryDTO.getDescription() != null)
                     throw new InputMismatchException("Only sub-categories can take base price or description!");
-                repository.save(categoryToBeSaved);
-            } else if (!parentIdExists)
-                throw new InvalidInputException("Parent Id is not valid");
-            else {
-                Optional<Category> parentCategoryOptional = repository.findById(parentCategoryId);
-                if (parentCategoryOptional.isEmpty())
-                    throw new ExistingEntityCannotBeFetchedException("Parent category exists but cannot be fetched!");
-                else {
-                    if (categoryBasePrice == null || categoryDescription.isBlank())
-                        throw new InputMismatchException("sub-categories must have a basePrice and description!");
-                    categoryToBeSaved.setParentCategory(parentCategoryOptional.get());
-                    Set<ConstraintViolation<Category>> violations = ApplicationContext.getValidator().validate(categoryToBeSaved);
-                    if (!violations.isEmpty())
-                        throw new ConstraintViolationException(violations);
-
-                    repository.save(categoryToBeSaved);
-
-                }
+            } else {// category to be saved is a sub-category
+                if (!repository.existsById(categoryDTO.getParentCategoryId()))
+                    throw new InvalidInputException("Parent Id is not valid");
+                if (categoryDTO.getBasePrice() == null || categoryDTO.getDescription().isBlank())
+                    throw new InputMismatchException("sub-categories must have a basePrice and description!");
+                categoryToBeSaved.setBasePrice(categoryDTO.getBasePrice());
+                categoryToBeSaved.setDescription(categoryDTO.getDescription());
+                categoryToBeSaved.setParentCategory(repository.findById(categoryDTO.getParentCategoryId()).orElseThrow(() -> new ExistingEntityCannotBeFetchedException("Parent category exists but cannot be fetched!")));
             }
+            repository.save(categoryToBeSaved);
         } finally {
             SemaphoreUtil.releaseNewCategorySemaphore();
         }
@@ -136,53 +115,31 @@ public class CategoryServiceImpl implements
     public void editCategory(Long categoryId, CategoryDTO categoryDTO) throws InterruptedException {
         SemaphoreUtil.acquireNewCategorySemaphore();
         try {
-            //check to see if the categoryId exists and fetch it.
             if (!repository.existsById(categoryId))
                 throw new InvalidInputException("Invalid category ID!");
-            Category categoryToBeUpdated = repository.findById(categoryId).
-                    orElseThrow(
-                            () -> new ExistingEntityCannotBeFetchedException(
-                                    "The category you want to edit exists but cannot be fetched!")
-                    );
-            // create a new category based on dto
-            String newCategoryName = categoryDTO.getName();
-            Double newBasePrice = categoryDTO.getBasePrice();
-            String newDescription = categoryDTO.getDescription();
+            Category category=repository.findById(categoryId).orElseThrow(()->new ExistingEntityCannotBeFetchedException("Category could not be fetched!"));
             Category updatedCategory = Category.builder().
-                    categoryName(newCategoryName).
-                    basePrice(newBasePrice).
-                    description(newDescription).build();
+                    categoryName(categoryDTO.getName()).
+                    basePrice(categoryDTO.getBasePrice()).
+                    description(categoryDTO.getDescription()).build();
             updatedCategory.setId(categoryId);
-            // check to see if the new category name is not duplicate!
-            if (existsByCategoryName(newCategoryName) && !findByCategoryName(newCategoryName).getId().equals(categoryId))
+            if (existsByCategoryName(categoryDTO.getName()) && !findByCategoryName(categoryDTO.getName()).getId().equals(categoryId))
                 throw new InvalidInputException("duplicate category names are not allowed!");
-            else {
-                // check to see if category is going to be a parent
-                if (categoryDTO.getParentCategoryId() == null) {
-                    if (newBasePrice != null || newDescription != null)
-                        throw new InputMismatchException("only sub-categories can take base price or description!");
-                    Set<ConstraintViolation<Category>> violations = ApplicationContext.getValidator().validate(updatedCategory);
-                    if (!violations.isEmpty())
-                        throw new ConstraintViolationException(violations);
-                    repository.save(updatedCategory);
-                    // category is not parent check to see if the parent category is valid and can be fetched
-                } else if (
-                        !repository.existsById(categoryDTO.getParentCategoryId()) ||
-                                categoryId.equals(categoryDTO.getParentCategoryId())
-                ) {
+            if (categoryDTO.getParentCategoryId() == null) {//category is going to be a parent
+                if (category.getParentCategory()!=null)
+                    throw new InputMismatchException("A sub-category cannot be converted to a parent category!");
+                if (categoryDTO.getBasePrice() != null || categoryDTO.getDescription() != null)
+                    throw new InputMismatchException("only sub-categories can take base price or description!");
+            } else {//category is going to become a subcategory
+                if (category.getParentCategory()==null)
+                    throw new InputMismatchException("A parent category cannot be converted to a sub-category!");
+                if (!repository.existsById(categoryDTO.getParentCategoryId()) || categoryId.equals(categoryDTO.getParentCategoryId()))
                     throw new InvalidInputException("Parent ID does not exist or it is the same as that of the current category");
-                } else {
-                    Category newParentCategory = repository.findById(categoryDTO.getParentCategoryId()).
-                            orElseThrow(() -> new ExistingEntityCannotBeFetchedException("Parent category exists but cannot be fetched!"));
-                    updatedCategory.setParentCategory(newParentCategory);
-                    if (newBasePrice == null || newDescription.isBlank())
-                        throw new InputMismatchException("sub-categories must have a description and a base price!");
-                    Set<ConstraintViolation<Category>> violations = ApplicationContext.getValidator().validate(updatedCategory);
-                    if (!violations.isEmpty())
-                        throw new ConstraintViolationException(violations);
-                    repository.save(updatedCategory);
-                }
+                updatedCategory.setParentCategory(repository.findById(categoryDTO.getParentCategoryId()).orElseThrow(() -> new ExistingEntityCannotBeFetchedException("Parent category exists but cannot be fetched!")));
+                if (categoryDTO.getBasePrice() == null || categoryDTO.getDescription().isBlank())
+                    throw new InputMismatchException("sub-categories must have a description and a base price!");
             }
+            repository.save(updatedCategory);
         } finally {
             SemaphoreUtil.releaseNewCategorySemaphore();
         }
@@ -252,6 +209,7 @@ public class CategoryServiceImpl implements
 
         repository.deleteById(categoryId);
     }
+
 
     @Override
     @Transactional

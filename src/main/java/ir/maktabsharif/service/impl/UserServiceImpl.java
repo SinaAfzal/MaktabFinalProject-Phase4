@@ -11,15 +11,11 @@ import ir.maktabsharif.service.EmailService;
 import ir.maktabsharif.service.UserService;
 import ir.maktabsharif.service.dto.request.UserChangePasswordDTO;
 import ir.maktabsharif.service.dto.request.UserEditProfileDTO;
-import ir.maktabsharif.util.ApplicationContext;
 import ir.maktabsharif.util.Policy;
 import ir.maktabsharif.util.SemaphoreUtil;
 import ir.maktabsharif.util.Validation;
 import ir.maktabsharif.util.exception.InvalidInputException;
 import jakarta.mail.MessagingException;
-import jakarta.validation.ConstraintViolation;
-import jakarta.validation.ConstraintViolationException;
-import org.apache.jasper.tagplugins.jstl.core.If;
 import org.springframework.context.annotation.Primary;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -29,7 +25,6 @@ import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
 import java.time.LocalDateTime;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -125,21 +120,15 @@ public class UserServiceImpl implements UserService {
             String lastName = userEditProfileDTO.getLastName();
             String email = userEditProfileDTO.getEmail();
 
-            //validate new email
             if (!Validation.isEmailValid(email))
                 throw new InvalidInputException("Email pattern is not valid!");
-            //check to see if the new email already exists
             if (existsByEmail(email) && !userRepository.findBaseUserByEmail(email).get().getId().equals(currentUser.getId()))
                 throw new InvalidInputException("This email already exists on database!");
 
             currentUser.setFirstName(firstName);
             currentUser.setLastName(lastName);
             currentUser.setEmail(email);
-            Set<ConstraintViolation<BaseUser>> violations = ApplicationContext.getValidator().validate(currentUser);
-            if (!violations.isEmpty())
-                throw new ConstraintViolationException(violations);
             userRepository.save(currentUser);
-//        SecurityContext.fillContext(currentUser);
         } finally {
             SemaphoreUtil.releaseNewUserSemaphore();
         }
@@ -165,9 +154,6 @@ public class UserServiceImpl implements UserService {
         if (passwordValid) {
             String hashedPassword = bCryptPasswordEncoder.encode(userChPassDTO.getNotHashedNewPassword());
             loggedInUser.setPassword(hashedPassword);
-            Set<ConstraintViolation<BaseUser>> violations = ApplicationContext.getValidator().validate(loggedInUser);
-            if (!violations.isEmpty())
-                throw new ConstraintViolationException(violations);
             userRepository.save(loggedInUser);
         } else
             throw new InvalidInputException("The pattern of new password is not valid!");

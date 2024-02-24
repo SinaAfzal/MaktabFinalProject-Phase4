@@ -4,6 +4,7 @@ import ir.maktabsharif.model.enumeration.TradesManStatus;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
+import lombok.experimental.SuperBuilder;
 
 import java.util.Arrays;
 
@@ -15,15 +16,21 @@ import java.util.Arrays;
 @Entity
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @DiscriminatorValue(value = "TradesMan")
+@SuperBuilder
 public class TradesMan extends BaseUser {
 
     @Enumerated(EnumType.STRING)
-    TradesManStatus status;
+    @Builder.Default
+    TradesManStatus status = TradesManStatus.NEW;
     byte[] avatar;
-    Float rating=0F;
-    Double earnedCredit;
-    Long numberOfDoneTasks=0L;
-    Long numberOfProposalsSent=0L;
+    @Builder.Default
+    Float rating = 0F;
+    @Builder.Default
+    Double earnedCredit = 0D;
+    @Builder.Default
+    Long numberOfDoneTasks = 0L;
+    @Builder.Default
+    Long numberOfProposalsSent = 0L;
 //todo you had to put the ManyToMany relation with categories here! not in the categories :(
 
 

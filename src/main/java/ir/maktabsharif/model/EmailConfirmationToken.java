@@ -5,6 +5,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.ManyToOne;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
+import lombok.experimental.SuperBuilder;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
@@ -17,7 +18,7 @@ import java.time.LocalDateTime;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @ToString
 @Entity
-@Builder
+@SuperBuilder
 public class EmailConfirmationToken extends BaseEntity {
     String tokenSerial;
     LocalDateTime createdAt;

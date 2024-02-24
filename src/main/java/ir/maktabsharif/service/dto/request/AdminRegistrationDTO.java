@@ -16,8 +16,8 @@ public class AdminRegistrationDTO implements RequestDTO {
     String firstName;
     @Pattern(regexp = "^(?!\\s)[a-zA-Z\\s]{3,15}(?<!\\s)$")
     String lastName;
-    @Email
+    @Email(message = "Email pattern is not valid!")
     String email;
-    @Pattern(regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d).{8,}$")
+    @Pattern(regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d).{8,}$",message = "Password is not Strong enough!")
     String notHashedPassword;
 }

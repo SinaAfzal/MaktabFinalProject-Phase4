@@ -17,8 +17,6 @@ import ir.maktabsharif.util.*;
 import ir.maktabsharif.util.exception.ExistingEntityCannotBeFetchedException;
 import ir.maktabsharif.util.exception.InvalidInputException;
 import jakarta.mail.MessagingException;
-import jakarta.validation.ConstraintViolation;
-import jakarta.validation.ConstraintViolationException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -69,41 +67,17 @@ public class TradesManServiceImpl extends
     public void register(TradesManRegistrationDTO trdRegDTO) throws IOException, InterruptedException, NoSuchAlgorithmException, InvalidKeySpecException, MessagingException {
         SemaphoreUtil.acquireNewUserSemaphore();
         try {
-            String imagePath = trdRegDTO.getImagePath();
-            String firstName = trdRegDTO.getFirstName();
-            String lastName = trdRegDTO.getLastName();
-            String password = trdRegDTO.getPassword();
-            String email = trdRegDTO.getEmail();
-            if (!Validation.isImageValid(imagePath))
+            if (!Validation.isImageValid(trdRegDTO.getImagePath()))
                 throw new IllegalArgumentException("Image should be in '.jpg' format with size less than 300kB.");
-            if (!Validation.isPasswordValid(password))
+            if (!Validation.isPasswordValid(trdRegDTO.getPassword()))
                 throw new IllegalArgumentException("Password is not strong enough!");
-            if (!Validation.isEmailValid(email))
+            if (!Validation.isEmailValid(trdRegDTO.getEmail()))
                 throw new IllegalArgumentException("Email format is not valid!");
-            if (existsByEmail(email))
+            if (existsByEmail(trdRegDTO.getEmail()))
                 throw new IllegalArgumentException("User already exists on database!");
 
-            // Read image file into a byte array
-            Path path = Paths.get(imagePath);
-            byte[] imageData = Files.readAllBytes(path);
-            TradesMan tradesMan = new TradesMan();
-            tradesMan.setAvatar(imageData);
-            tradesMan.setStatus(TradesManStatus.NEW);
-            tradesMan.setEarnedCredit(0.00);
-            tradesMan.setEmail(email);
-            tradesMan.setRole(UserRole.ROLE_TRADESMAN);
-            tradesMan.setRegistrationDateTime(LocalDateTime.now());
-            tradesMan.setFirstName(firstName);
-            tradesMan.setLastName(lastName);
-            String hashedPassword = bCryptPasswordEncoder.encode(password);
-            tradesMan.setPassword(hashedPassword);
-            tradesMan.setActive(false);
-            tradesMan.setEmailVerified(false);
-            Set<ConstraintViolation<TradesMan>> violations = ApplicationContext.getValidator().validate(tradesMan);
-            if (!violations.isEmpty())
-                throw new ConstraintViolationException(violations);
-            repository.save(tradesMan);
-            sendEmailVerificationEmail(email);
+            repository.save(mapToEntity(trdRegDTO));
+            sendEmailVerificationEmail(trdRegDTO.getEmail());
         } finally {
             SemaphoreUtil.releaseNewUserSemaphore();
         }
@@ -184,6 +158,21 @@ public class TradesManServiceImpl extends
         return repository.getEarnedCreditBalance(tradesmanId);
     }
 
+    private TradesMan mapToEntity(TradesManRegistrationDTO dto) throws IOException {
+        Path path = Paths.get(dto.getImagePath());
+        byte[] imageData = Files.readAllBytes(path);
+        return TradesMan.builder()
+                .firstName(dto.getFirstName())
+                .avatar(imageData)
+                .email(dto.getEmail())
+                .role(UserRole.ROLE_TRADESMAN)
+                .registrationDateTime(LocalDateTime.now())
+                .lastName(dto.getLastName())
+                .password(bCryptPasswordEncoder.encode(dto.getPassword()))
+                .isActive(false)
+                .isEmailVerified(false)
+                .build();
+    }
 
     public FoundTradesManDTO mapToDTO(TradesMan tradesMan) {
         FoundTradesManDTO foundTradesManDTO = new FoundTradesManDTO();

@@ -11,14 +11,10 @@ import ir.maktabsharif.service.dto.request.AdminRegistrationDTO;
 import ir.maktabsharif.service.dto.request.AdvancedUserSearchDTO;
 import ir.maktabsharif.service.dto.response.FoundAdminDTO;
 import ir.maktabsharif.service.dto.response.ResponseDTO;
-import ir.maktabsharif.util.ApplicationContext;
 import ir.maktabsharif.util.SemaphoreUtil;
-import ir.maktabsharif.util.Validation;
 import ir.maktabsharif.util.exception.InvalidInputException;
 
 import jakarta.mail.MessagingException;
-import jakarta.validation.ConstraintViolation;
-import jakarta.validation.ConstraintViolationException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,7 +24,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
-import java.util.Set;
 
 @Service
 @Transactional(readOnly = true)
@@ -63,34 +58,11 @@ public class AdminServiceImpl extends
     public void register(AdminRegistrationDTO adminRegDTO) throws InterruptedException, MessagingException {
         SemaphoreUtil.acquireNewUserSemaphore();
         try {
-            String email = adminRegDTO.getEmail();
-            String firstName = adminRegDTO.getFirstName();
-            String lastName = adminRegDTO.getLastName();
-            String notHashedPassword = adminRegDTO.getNotHashedPassword();
-
-            if (!Validation.isEmailValid(email))
-                throw new InvalidInputException("Email pattern is not valid!");
-
-            if (existsByEmail(email))
+            if (existsByEmail(adminRegDTO.getEmail()))
                 throw new InvalidInputException("Email already exists on database!");
-
-            if (!Validation.isPasswordValid(notHashedPassword))
-                throw new InvalidInputException("Password is not Strong enough!");
-
-            String hashedPassword = bCryptPasswordEncoder.encode(notHashedPassword);
-            Admin admin = new Admin();
-            admin.setFirstName(firstName);
-            admin.setLastName(lastName);
-            admin.setEmail(email);
-            admin.setPassword(hashedPassword);
-            admin.setRole(UserRole.ROLE_ADMIN);
-            admin.setRegistrationDateTime(LocalDateTime.now());
-            admin.setActive(true);
-            Set<ConstraintViolation<Admin>> violations = ApplicationContext.getValidator().validate(admin);
-            if (!violations.isEmpty())
-                throw new ConstraintViolationException(violations);
+            Admin admin = mapToEntity(adminRegDTO);
             repository.save(admin);
-            sendEmailVerificationEmail(email);
+            sendEmailVerificationEmail(adminRegDTO.getEmail());
         } finally {
             SemaphoreUtil.releaseNewUserSemaphore();
         }
@@ -112,6 +84,18 @@ public class AdminServiceImpl extends
         foundAdminDTO.setRegistrationDateTime(admin.getRegistrationDateTime());
         foundAdminDTO.setEmailVerified(admin.isEmailVerified());
         return foundAdminDTO;
+    }
+
+    public Admin mapToEntity(AdminRegistrationDTO dto){
+        return Admin.builder()
+                .firstName(dto.getFirstName())
+                .lastName(dto.getLastName())
+                .email(dto.getEmail())
+                .role(UserRole.ROLE_ADMIN)
+                .registrationDateTime(LocalDateTime.now())
+                .isActive(true)
+                .password(bCryptPasswordEncoder.encode(dto.getNotHashedPassword()))
+                .build();
     }
 
 }

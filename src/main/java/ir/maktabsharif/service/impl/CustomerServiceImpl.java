@@ -14,8 +14,6 @@ import ir.maktabsharif.util.exception.ExistingEntityCannotBeFetchedException;
 import ir.maktabsharif.util.exception.InvalidInputException;
 
 import jakarta.mail.MessagingException;
-import jakarta.validation.ConstraintViolation;
-import jakarta.validation.ConstraintViolationException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,7 +21,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.NoSuchElementException;
 import java.util.Optional;
-import java.util.Set;
 
 @Service
 @Transactional(readOnly = true)
@@ -45,37 +42,10 @@ public class CustomerServiceImpl extends
     public void register(CustomerRegistrationDTO cuReDTO) throws InterruptedException, MessagingException {
         SemaphoreUtil.acquireNewUserSemaphore();
         try {
-            String email = cuReDTO.getEmail();
-            String firstName = cuReDTO.getFirstName();
-            String lastName = cuReDTO.getLastName();
-            String notHashedPassword = cuReDTO.getNotHashedPassword();
-
-            if (!Validation.isEmailValid(email))
-                throw new InvalidInputException("Email pattern is not valid!");
-
-            if (existsByEmail(email))
+            if (existsByEmail(cuReDTO.getEmail()))
                 throw new InvalidInputException("Email already exists on database!");
-
-            if (!Validation.isPasswordValid(notHashedPassword))
-                throw new InvalidInputException("Password is not Strong enough!");
-
-            //hash password:
-            String hashedPassword = bCryptPasswordEncoder.encode(notHashedPassword);
-
-            Customer customer = new Customer();
-            customer.setFirstName(firstName);
-            customer.setLastName(lastName);
-            customer.setEmail(email);
-            customer.setPassword(hashedPassword);
-            customer.setRole(UserRole.ROLE_CUSTOMER);
-            customer.setRegistrationDateTime(LocalDateTime.now());
-            customer.setPurchasedBalance(0.00D);
-            customer.setActive(true);
-            Set<ConstraintViolation<Customer>> violations = ApplicationContext.getValidator().validate(customer);
-            if (!violations.isEmpty())
-                throw new ConstraintViolationException(violations);
-            repository.save(customer);
-            sendEmailVerificationEmail(email);
+            repository.save(mapToEntity(cuReDTO));
+            sendEmailVerificationEmail(cuReDTO.getEmail());
         } finally {
             SemaphoreUtil.releaseNewUserSemaphore();
         }
@@ -120,6 +90,18 @@ public class CustomerServiceImpl extends
         if (!repository.existsById(cId))
             throw new InvalidInputException("Customer not found!");
         return repository.getPurchasedCredit(cId);
+    }
+
+    private Customer mapToEntity(CustomerRegistrationDTO dto) {
+        return Customer.builder()
+                .firstName(dto.getFirstName())
+                .lastName(dto.getLastName())
+                .password(bCryptPasswordEncoder.encode(dto.getNotHashedPassword()))
+                .email(dto.getEmail())
+                .role(UserRole.ROLE_CUSTOMER)
+                .isActive(true)
+                .registrationDateTime(LocalDateTime.now())
+                .build();
     }
 
     public FoundCustomerDTO mapToDTO(Customer customer) {

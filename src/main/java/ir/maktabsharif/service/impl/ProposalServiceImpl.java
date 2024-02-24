@@ -3,21 +3,15 @@ package ir.maktabsharif.service.impl;
 
 import ir.maktabsharif.model.*;
 import ir.maktabsharif.model.enumeration.TaskStatus;
-import ir.maktabsharif.model.enumeration.TradesManStatus;
 import ir.maktabsharif.repository.ProposalRepository;
-import ir.maktabsharif.service.CustomerService;
 import ir.maktabsharif.service.ProposalService;
 import ir.maktabsharif.service.TradesManService;
 import ir.maktabsharif.service.dto.request.TaskProposalDTO;
 import ir.maktabsharif.service.dto.response.FoundProposalDTO;
-import ir.maktabsharif.util.ApplicationContext;
-import ir.maktabsharif.util.SecurityContext;
 import ir.maktabsharif.util.exception.AccessDeniedException;
 import ir.maktabsharif.util.exception.ExistingEntityCannotBeFetchedException;
 import ir.maktabsharif.util.exception.InvalidInputException;
 
-import jakarta.validation.ConstraintViolation;
-import jakarta.validation.ConstraintViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,12 +24,11 @@ import java.util.stream.Collectors;
 public class ProposalServiceImpl implements ProposalService {
     private final ProposalRepository repository;
     private final TradesManService tradesManService;
-    private final CustomerService customerService;
 
-    public ProposalServiceImpl(ProposalRepository repository, TradesManService tradesManService, CustomerService customerService) {
+
+    public ProposalServiceImpl(ProposalRepository repository, TradesManService tradesManService) {
         this.repository = repository;
         this.tradesManService = tradesManService;
-        this.customerService = customerService;
     }
 
     @Override
@@ -44,8 +37,6 @@ public class ProposalServiceImpl implements ProposalService {
 
         if (!existsById)
             throw new InvalidInputException("TradesMan could not be found!");
-//        if (!tradesManId.equals(SecurityContext.getCurrentUserId()) && !(SecurityContext.getCurrentUser() instanceof Admin))
-//            throw new AccessDeniedException("Only admins or the tradesman himself/herself can access this service");
         List<Proposal> proposalList = repository.findByTradesManId(tradesManId);
         if (proposalList.size() == 0)
             throw new NoSuchElementException("TradesMan has no proposals!");
@@ -63,44 +54,20 @@ public class ProposalServiceImpl implements ProposalService {
     public void createProposal(Long tradesmanId, TaskProposalDTO tskProDTO) { //todo each tradesMan should not be able to create more than 1 proposal for each task!
         TradesMan tradesMan = tradesManService.findById_ForDevelopmentOnly(tradesmanId);
         if (!tradesMan.isActive())
-            throw new AccessDeniedException("Your account has been deactivated! please contact site admin!");
-        else if (!tradesMan.getStatus().equals(TradesManStatus.APPROVED))
-            throw new AccessDeniedException("Your account is not approved by the site admin yet!");
-        Long taskId = tskProDTO.getTaskId();
-        if (repository.didTradesmanSendProposalForTaskBefore(tradesmanId,taskId))
+            throw new AccessDeniedException("Your account is not approved or has been deactivated! please contact site admin!");
+        if (repository.didTradesmanSendProposalForTaskBefore(tradesmanId,tskProDTO.getTaskId()))
             throw new IllegalCallerException("You cannot send multiple proposals for the same task!");
-        Double proposedPrice = tskProDTO.getProposedPrice();
-        LocalDateTime proposedStartTime = tskProDTO.getProposedStartTime();
-        Integer requiredHours = tskProDTO.getRequiredHours();
-        Optional<Task> taskOptional = repository.findTaskByTaskId(taskId);
-
-
-        if (taskOptional.isEmpty())
-            throw new InvalidInputException("Task could not be fetched!");
-        Task task = taskOptional.get();
+        Task task = repository.findTaskByTaskId(tskProDTO.getTaskId()).orElseThrow(()-> new InvalidInputException("Task could not be fetched!"));
         if (!task.getStatus().equals(TaskStatus.AWAITING_OFFER_BY_TRADESMEN) && !task.getStatus().equals(TaskStatus.AWAITING_SELECTION_OF_TRADESMAN))
             throw new AccessDeniedException("Task is not accepting proposals at this stage!");
-        Optional<Category> categoryOptional = repository.findCategoryByCategoryId(task.getSubCategoryId());
-        if (categoryOptional.isEmpty())
-            throw new InputMismatchException("Task has no category! please contact site admin!");
-        if (categoryOptional.get().getBasePrice() > proposedPrice)
+        Category category=repository.findCategoryByCategoryId(task.getSubCategoryId()).orElseThrow(()->new InputMismatchException("Task has no category! please contact site admin!"));
+        if (category.getBasePrice() > tskProDTO.getProposedPrice())
             throw new InvalidInputException("The proposed price cannot be less than sub-category's base price!");
-        if (proposedStartTime.isBefore(LocalDateTime.now()) || proposedStartTime.isBefore(task.getTaskDateTimeByCustomer()))
+        if (tskProDTO.getProposedStartTime().isBefore(LocalDateTime.now()) || tskProDTO.getProposedStartTime().isBefore(task.getTaskDateTimeByCustomer()))
             throw new InvalidInputException("The proposed date/time cannot be earlier than current server time or the time determined by customer!");
 
-        Proposal proposal = Proposal.builder().
-                proposalRegistrationTime(LocalDateTime.now()).
-                proposedStartTime(proposedStartTime).
-                proposedPrice(proposedPrice).
-                requiredHours(requiredHours).
-                tradesManId(tradesmanId).
-                taskId(taskId).build();
         task.setStatus(TaskStatus.AWAITING_SELECTION_OF_TRADESMAN);
-        Set<ConstraintViolation<Proposal>> violations = ApplicationContext.getValidator().validate(proposal);
-        if (!violations.isEmpty())
-            throw new ConstraintViolationException(violations);
-
-        repository.save(proposal);
+        repository.save(mapToEntity(tskProDTO,tradesmanId));
         tradesMan.setNumberOfProposalsSent(tradesMan.getNumberOfProposalsSent() + 1);
         tradesManService.saveJustForDeveloperUse(tradesMan);
     }
@@ -221,6 +188,16 @@ public class ProposalServiceImpl implements ProposalService {
         if (!proposal.getTradesManId().equals(tradesmanId))
             throw new AccessDeniedException("Only proposal owner and an admin can access this service!");
         repository.deleteById(proposalId);
+    }
+
+    private Proposal mapToEntity(TaskProposalDTO dto,Long tradesmanId){
+        return Proposal.builder().
+                proposalRegistrationTime(LocalDateTime.now()).
+                proposedStartTime(dto.getProposedStartTime()).
+                proposedPrice(dto.getProposedPrice()).
+                requiredHours(dto.getRequiredHours()).
+                tradesManId(tradesmanId).
+                taskId(dto.getTaskId()).build();
     }
 
     @Override

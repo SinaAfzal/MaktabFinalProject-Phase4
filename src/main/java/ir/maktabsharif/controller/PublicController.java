@@ -72,7 +72,7 @@ public class PublicController {
 
     @PostMapping("/admin-register")
     @ResponseBody
-    public ResponseEntity<Void> register(@RequestBody AdminRegistrationDTO dto) throws NoSuchAlgorithmException, InvalidKeySpecException, InterruptedException, MessagingException {
+    public ResponseEntity<Void> register(@RequestBody @Valid AdminRegistrationDTO dto) throws NoSuchAlgorithmException, InvalidKeySpecException, InterruptedException, MessagingException {
         adminService.register(dto);
         return new ResponseEntity<>(HttpStatus.OK);
     }

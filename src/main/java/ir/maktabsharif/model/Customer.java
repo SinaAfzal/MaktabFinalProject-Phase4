@@ -4,6 +4,7 @@ import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
+import lombok.experimental.SuperBuilder;
 
 @Getter
 @Setter
@@ -12,12 +13,14 @@ import lombok.experimental.FieldDefaults;
 @Entity
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @DiscriminatorValue(value = "Customer")
-
+@SuperBuilder
 public class Customer extends BaseUser {
-
-    Double purchasedBalance;
-    Long numberOfRequestedTasks=0L;
-    Long numberOfDoneTasks=0L;
+    @Builder.Default
+    Double purchasedBalance = 0D;
+    @Builder.Default
+    Long numberOfRequestedTasks = 0L;
+    @Builder.Default
+    Long numberOfDoneTasks = 0L;
 
     @Override
     public String toString() {

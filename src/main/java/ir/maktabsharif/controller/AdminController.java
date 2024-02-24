@@ -1,7 +1,6 @@
 package ir.maktabsharif.controller;
 
 import ir.maktabsharif.model.Admin;
-import ir.maktabsharif.model.BaseUser;
 import ir.maktabsharif.model.enumeration.TaskStatus;
 import ir.maktabsharif.model.enumeration.TradesManStatus;
 import ir.maktabsharif.service.*;
@@ -58,7 +57,7 @@ public class AdminController {
     }
 
     @PostMapping("/admin-register")
-    public ResponseEntity<Void> register(@RequestBody AdminRegistrationDTO dto) throws NoSuchAlgorithmException, InvalidKeySpecException, InterruptedException, MessagingException {
+    public ResponseEntity<Void> register(@RequestBody @Valid AdminRegistrationDTO dto) throws NoSuchAlgorithmException, InvalidKeySpecException, InterruptedException, MessagingException {
         adminService.register(dto);
         return new ResponseEntity<>(HttpStatus.OK);
     }
