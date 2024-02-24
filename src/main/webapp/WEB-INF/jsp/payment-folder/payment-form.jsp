@@ -25,7 +25,7 @@
     <div id="countdown">10:00</div>
     <div id="message"></div>
 </div>
-<form method="post" action="http://localhost:8080/payment">
+<form method="post" action="http://localhost:8080/customer/payment">
     <section style="background-color: lightskyblue">
         <div class="container py-5">
             <div class="row d-flex justify-content-center">
