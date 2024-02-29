@@ -87,7 +87,7 @@ public class TradesManController {
     }
 
     @PostMapping("/create-proposal")
-    public ResponseEntity<Void> createProposal(@RequestBody TaskProposalDTO taskProposalDTO) {
+    public ResponseEntity<Void> createProposal(@RequestBody @Valid TaskProposalDTO taskProposalDTO) {
         TradesMan principal = (TradesMan) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         Long tradesmanId = principal.getId();
         proposalService.createProposal(tradesmanId, taskProposalDTO);
